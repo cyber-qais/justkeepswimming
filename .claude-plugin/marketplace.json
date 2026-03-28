@@ -11,7 +11,10 @@
   "plugins": [
     {
       "name": "justkeepswimming",
-      "source": ".",
+      "source": {
+        "source": "github",
+        "repo": "cyber-qais/justkeepswimming"
+      },
       "description": "Lightweight plan management with context-aware handoffs to prevent context rot during multi-phase implementations",
       "version": "1.0.0"
     }
