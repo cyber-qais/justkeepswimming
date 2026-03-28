@@ -1,0 +1,19 @@
+{
+  "name": "justkeepswimming",
+  "description": "Lightweight plan management with context-aware handoffs to prevent context rot during multi-phase implementations",
+  "version": "1.0.0",
+  "author": {
+    "name": "Qais Alkurdi"
+  },
+  "homepage": "https://github.com/qais-alkurdi/justkeepswimming",
+  "license": "Apache-2.0",
+  "keywords": [
+    "plan-management",
+    "context-preservation",
+    "handoffs",
+    "thinking-protocol",
+    "multi-session",
+    "night-build",
+    "deployment-pipeline"
+  ]
+}
