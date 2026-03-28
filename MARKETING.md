@@ -118,4 +118,4 @@ Your agent doesn't fight the context window. It works *with* it.
 
 Pairs beautifully with the [superpowers plugin](https://github.com/anthropics/claude-code) for auto-generated plans, but you can bring your own plan too.
 
-MIT License.
+Apache 2.0 License.
