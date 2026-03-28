@@ -318,6 +318,7 @@
             color: var(--slate-700);
             max-height: 400px;
             overflow-y: auto;
+            white-space: pre-wrap;
         }
 
         .handoff-doc-body .hl { color: var(--blue); font-weight: 600; }
@@ -702,8 +703,28 @@
             </div>
             <div class="feature-card">
                 <div class="badge badge-green">Light</div>
-                <h3>200 lines, 1 file</h3>
-                <p>No state files, no plugins, no config. Copy one file and you're running. Plans are just markdown in your repo.</p>
+                <h3>One plugin, zero config</h3>
+                <p>Install with a single command. No state files, no setup wizards. Plans and handoffs are just markdown in your repo.</p>
+            </div>
+            <div class="feature-card">
+                <div class="badge badge-purple">Autonomous</div>
+                <h3>Night build pipeline</h3>
+                <p>End-of-day command that reviews commits, code reviews, builds, deploys, writes a summary, and pushes to git. Fully unattended.</p>
+            </div>
+            <div class="feature-card">
+                <div class="badge badge-amber">Adaptive</div>
+                <h3>Context-aware budgets</h3>
+                <p>Detects your context window size (200k vs 1M) and sets hard phase limits. No "just one more thing" &mdash; it hands off before context degrades.</p>
+            </div>
+            <div class="feature-card">
+                <div class="badge badge-blue">Instant</div>
+                <h3>Plan from conversation</h3>
+                <p>Already discussing architecture? Use <code>--from-context</code> to distill the conversation into a structured plan. Add <code>--now</code> to skip confirmations.</p>
+            </div>
+            <div class="feature-card">
+                <div class="badge badge-green">Durable</div>
+                <h3>Post-delivery maintenance</h3>
+                <p>Completed plans stay useful. Bug reports get structured debugging with maintenance logs, not ad-hoc guessing.</p>
             </div>
         </div>
     </div>
@@ -794,9 +815,9 @@
             </thead>
             <tbody>
                 <tr>
-                    <td><strong>Files to install</strong></td>
-                    <td>1</td>
-                    <td>30+</td>
+                    <td><strong>Installation</strong></td>
+                    <td>1 plugin command</td>
+                    <td>30+ files</td>
                 </tr>
                 <tr>
                     <td><strong>State tracking</strong></td>
@@ -822,6 +843,11 @@
                     <td><strong>Dependencies</strong></td>
                     <td>None required</td>
                     <td>Plugin ecosystem</td>
+                </tr>
+                <tr>
+                    <td><strong>Commands</strong></td>
+                    <td>2 (plan + night build)</td>
+                    <td>10+ specialized agents</td>
                 </tr>
             </tbody>
         </table>
@@ -882,36 +908,50 @@
     <div class="container">
         <div class="section-label" style="color: var(--cyan);">Installation</div>
         <h2>Up and running in 10 seconds</h2>
-        <p>One directory. One file. No dependencies.</p>
+        <p>Install as a plugin or copy two files. No dependencies.</p>
         <div class="install-steps">
             <div class="install-step">
-                <h3><span>1</span> Create the commands directory</h3>
-                <code>mkdir -p ~/.claude/commands/justkeepswimming</code>
+                <h3><span>1</span> Add the marketplace</h3>
+                <code>/plugin marketplace add cyber-qais/justkeepswimming</code>
             </div>
             <div class="install-step">
-                <h3><span>2</span> Copy the skill file</h3>
-                <code>cp go.md ~/.claude/commands/justkeepswimming/go.md</code>
+                <h3><span>2</span> Install the plugin</h3>
+                <code>/plugin install justkeepswimming</code>
             </div>
             <div class="install-step">
                 <h3><span>3</span> Use it</h3>
                 <p>Open any Claude Code session and run:</p>
-                <code>/justkeepswimming:go</code>
+                <code>/justkeepswimming:go my-feature</code>
+            </div>
+        </div>
+        <div class="install-steps" style="margin-top: 1.5rem;">
+            <div class="install-step">
+                <h3>Alternative: Manual install</h3>
+                <code>mkdir -p ~/.claude/commands/justkeepswimming<br>
+cp commands/justkeepswimming/*.md ~/.claude/commands/justkeepswimming/</code>
+            </div>
+        </div>
+        <div class="install-steps" style="margin-top: 1.5rem;">
+            <div class="install-step">
+                <h3>Alternative: npm</h3>
+                <code>npm install justkeepswimming</code>
             </div>
         </div>
         <div class="install-note">
-            Works with any Claude Code project. Optionally pairs with the <a href="#">superpowers plugin</a> for auto-generated plans.
+            Works with any Claude Code project. Optionally pairs with the <a href="https://github.com/obra/superpowers">superpowers plugin</a> for auto-generated plans.
+            <br>Available on <a href="https://github.com/cyber-qais/justkeepswimming">GitHub</a> &middot; <a href="https://www.npmjs.com/package/justkeepswimming">npm</a>
         </div>
     </div>
 </section>
 
 <!-- Footer -->
 <footer>
-    <p><strong>Just Keep Swimming</strong> &mdash; MIT License</p>
-    <p style="margin-top:0.5rem;">Made for <a href="https://docs.anthropic.com/en/docs/claude-code">Claude Code</a> by developers who got tired of repeating themselves.</p>
-    <div class="footer-brand">
-        <img src="data:image/png;base64,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" alt="QaiS AI">
-        <span>From the Developers @ HQE Systems</span>
-    </div>
+    <p><strong>Just Keep Swimming</strong> &mdash; Apache 2.0 License</p>
+    <p style="margin-top:0.5rem;">Made for <a href="https://docs.anthropic.com/en/docs/claude-code">Claude Code</a> by <a href="https://github.com/cyber-qais">Qais Alkurdi</a></p>
+    <p style="margin-top:0.5rem; font-size: 0.8rem; color: var(--slate-400);">
+        <a href="https://github.com/cyber-qais/justkeepswimming">GitHub</a> &middot;
+        <a href="https://www.npmjs.com/package/justkeepswimming">npm</a>
+    </p>
 </footer>
 
 </body>
