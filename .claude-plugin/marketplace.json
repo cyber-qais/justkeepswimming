@@ -1,0 +1,19 @@
+{
+  "name": "justkeepswimming-marketplace",
+  "owner": {
+    "name": "Qais Alkurdi",
+    "url": "https://github.com/cyber-qais"
+  },
+  "metadata": {
+    "description": "Context-aware handoffs and autonomous build pipelines for Claude Code",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "justkeepswimming",
+      "source": ".",
+      "description": "Lightweight plan management with context-aware handoffs to prevent context rot during multi-phase implementations",
+      "version": "1.0.0"
+    }
+  ]
+}

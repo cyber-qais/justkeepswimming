@@ -1,0 +1,30 @@
+{
+  "name": "justkeepswimming",
+  "version": "1.0.0",
+  "description": "Lightweight plan management plugin for Claude Code with context-aware handoffs to prevent context rot during multi-phase implementations",
+  "author": "Qais Alkurdi",
+  "license": "Apache-2.0",
+  "homepage": "https://github.com/cyber-qais/justkeepswimming",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cyber-qais/justkeepswimming.git"
+  },
+  "keywords": [
+    "claude-code",
+    "claude-code-plugin",
+    "agent-skills",
+    "plan-management",
+    "context-preservation",
+    "handoffs",
+    "thinking-protocol",
+    "ai-agents",
+    "night-build"
+  ],
+  "files": [
+    ".claude-plugin/",
+    "commands/",
+    "skills/",
+    "THINKING.md",
+    "LICENSE"
+  ]
+}
