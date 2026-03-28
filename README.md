@@ -62,7 +62,7 @@ The full methodology lives in [`THINKING.md`](THINKING.md).
 
 ```bash
 # In Claude Code:
-/plugin marketplace add qais-alkurdi/justkeepswimming
+/plugin marketplace add cyber-qais/justkeepswimming
 /plugin install justkeepswimming
 ```
 
