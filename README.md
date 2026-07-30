@@ -52,6 +52,8 @@ PLAN.md ─► sprint plan ─► dispatch devs (parallel) ─► review gate �
 - **One live BOARD.md replaces the handoff pile.** Updated at every sync point. Resume = two file reads (PLAN + BOARD), no matter how many sessions came before.
 - **The door stays open.** One worktree/branch per plan, kept open across sprints AND sessions. Merge windows integrate and deploy finished phases *while later phases are still being built* — no per-phase worktree churn, no big-bang merge at the end.
 - **Every phase passes an adversarial review gate before merging.** Fixes go back to the same warm agent (cached context), not a fresh spawn.
+- **The tier doctrine puts every model where it earns its cost.** The strongest model orchestrates (e.g. Fable); one tier down develops (Opus); two tiers down take the rote lanes (Sonnet/Haiku, low effort); review gates run at high effort, and the riskiest surfaces get the orchestrator's model as their reviewer.
+- **Fresh sessions beat compaction.** Sessions run as shifts that end at clean board boundaries — a new session resumes from two reads instead of a compacted orchestrator continuing with silently blurred judgment.
 - **A completeness critic sweeps for gaps** before the plan is declared done — then SUMMARY.md, a clean folder, and prioritized next-step recommendations.
 
 ## Two Commands
@@ -183,7 +185,8 @@ Plus the **Orchestrator's Corollary** for v2: delegate the noise, keep the signa
 | One-read resume | BOARD.md is the only state file — the handoff pile is dead |
 | Cache alignment | Front-load reads, batch tool calls, keep orchestrator turns short and stable |
 | Reuse warm agents | Fixes go to the same agent (cached context), not fresh spawns |
-| Right-size | Cheapest model/effort that passes the review gate |
+| Tier doctrine | Strongest model orchestrates; one tier down develops; rote lanes go two tiers down |
+| Fresh sessions | Shifts end at board boundaries — resume is two reads, compaction never gets to judge |
 | Kill rework | Acceptance criteria in every dispatch; review gates before every merge |
 
 ---

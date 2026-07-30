@@ -87,6 +87,7 @@ Entirely project-dependent — use Phase 0's discovery:
 1. Version/cache-bust increments where the project uses them.
 2. Build each relevant target (`npm run build`, `flutter build web`, `cargo build --release`, …).
 3. Deploy per the project's procedure: restart services, copy artifacts, run migrations. **A queued/batched deploy (projects with a deploy cadence) counts as SUCCESS — don't force immediate deploys overnight.**
+4. **Verify the deploy landed** when you can: if the harness supports background waits (scheduled wakeups/monitors), wait for the queue/CI to flush, then confirm a deployed-version marker or health endpoint and stamp the summary **verified**. No background-wait support → stamp "queued, unverified" honestly.
 4. Notify users only through the project's sanctioned mechanism, and only if something user-facing actually shipped. Prefer gentle notices over force-refresh.
 
 ## Phase 5: Summary

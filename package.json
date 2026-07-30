@@ -1,6 +1,6 @@
 {
   "name": "justkeepswimming",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "Scrum-master plan execution for Claude Code — parallel dev agents, review gates, a live board, and open-door merge windows",
   "author": "Qais Alkurdi",
   "license": "Apache-2.0",

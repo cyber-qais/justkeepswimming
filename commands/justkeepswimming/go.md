@@ -112,7 +112,16 @@ Execute phases inline, in order. After EVERY phase: verify against acceptance cr
 
 1. From PLAN.md's Depends-on lines, compute the **ready set** — phases whose dependencies are all merged.
 2. **Assign file ownership.** Each dispatched phase owns a disjoint set of files/dirs (use PLAN.md's files-touched hints; when two ready phases claim the same file, serialize them or move the shared file to one owner). Shared registries/manifests (route tables, config indexes, nav files, lockfiles) are **scrum-master-edited at the merge window**, not agent-edited — they're the classic collision point.
-3. **Right-size each dispatch:** mechanical/rote work (renames, boilerplate, config plumbing) → smaller model or low effort; design-heavy or risky work → default model, high effort for the hardest. The cheapest agent that can pass the review gate is the right agent.
+3. **Assign models & effort — the tier doctrine** (example mapping as of the Claude 5 family in parentheses):
+
+   | Role | Model / effort | Why |
+   |---|---|---|
+   | Orchestrator (you) | The strongest model available (Fable) — run the session on it; never downgraded, never compacted | Sprint planning, ownership, verdicts, and merges are judgment work |
+   | Dev agents | One tier down (Opus), default effort | Depth comes from focus (one phase, owned files), not from tier |
+   | Rote/mechanical lanes | Two tiers down (Sonnet; Haiku for pure mechanics), low effort | Renames, boilerplate, config plumbing |
+   | Review gates | Dev tier (Opus) at high effort; the riskiest surfaces (security, data-loss, auth) inherit the orchestrator's model | Adversarial reading is the cheapest insurance there is |
+
+   The cheapest agent that passes the review gate is the right agent — but the gate itself is never where you economize. Deviations are board Decisions.
 4. Sprint size: dispatch everything ready and disjoint — that's the point. But keep it supervisable: if the ready set exceeds ~4 phases, batch it.
 
 ### 5c. Dispatch — parallel, one message
@@ -136,9 +145,11 @@ learnings worth the board · open items. No diffs, no file dumps.
 
 While agents work, you do board upkeep and merge windows — you do not idle-poll, and you do not grab a phase to "help." (A blocked sprint with nothing left to integrate is the one time you may take a small task inline.)
 
+If the harness has a task list (e.g. TaskCreate/TaskUpdate), mirror phase states into it — dependencies from the Depends-on lines, updates at sync points. That gives the user live progress; the board stays canonical.
+
 ### 5d. Review gate — every phase, before its merge
 
-For each returned phase, dispatch a **reviewer agent** (fresh eyes; high effort for risky code):
+For each returned phase, dispatch a **reviewer agent** (fresh eyes; dev tier at high effort — tier doctrine, §5b.3):
 
 ```
 Adversarially review phase {N} ({goal}) in {workspace}. Scope: the owned files {list}.
@@ -151,6 +162,7 @@ failure scenario each · nitpicks separately (non-blocking).
 
 - RED → send the findings BACK TO THE SAME DEV AGENT (message the existing agent — its context is warm and cached; a fresh fixer would re-read everything). Re-review the fix. Two RED rounds on the same phase → stop, mark it blocked on the board, move on or ask the user.
 - Batch small same-risk phases into one review dispatch; never skip the gate because a change "is obviously fine." Rework escaping to a later sprint is the single biggest token burn this skill exists to prevent.
+- **Wide fan-outs (≥3 same-shape dispatches — a review panel across many phases, the §5g gap sweep) MAY run through your harness's deterministic multi-agent workflow tool when one is available** — this skill directing you to use it is your opt-in. Give each agent a JSON schema so reports come back validated instead of prose. Dev lanes stay on the interactive agent tool — they need follow-up messages.
 
 ### 5e. Merge window — integrate while agents still work
 
@@ -178,20 +190,23 @@ All phases merged ≠ done. Dispatch a **completeness critic**: "Read PLAN.md ac
 | One-read resume | BOARD.md is the only state file; the handoff pile is dead |
 | Cache alignment | Front-load your reads (PLAN, BOARD) at session start and don't re-read; batch independent tool calls in one message; keep orchestrator turns short and stable |
 | Reuse warm agents | Follow-ups and fixes go to the SAME agent — its context is already cached; fresh spawns re-read the world |
-| Right-size | Cheapest model/effort that passes the gate; save high effort for review and risky design |
+| Tier doctrine | The strongest model orchestrates; one tier down develops; two tiers down take the rote lanes; high effort is reserved for review gates (§5b.3) |
+| Fresh sessions | End a shift at a board boundary instead of riding into compaction — resume costs two reads (§7) |
 | Kill rework | Acceptance criteria travel IN the dispatch prompt; review gates run BEFORE merges; BLOCKED beats a wrong guess |
 | Cap ceremony | Board updates are a few edits — status lines, not essays |
 
-## 7. Context events & session end
+## 7. Session lifecycle — fresh sessions beat compaction
 
-The board makes context loss survivable — these triggers make it cheap:
+The orchestrator's judgment is the one thing that must never degrade. Harness compaction keeps a session alive, but it silently blurs exactly what the scrum master exists to hold — decisions, ownership boundaries, verdicts. The board makes sessions disposable, so dispose of them: **work in shifts, and hand a FRESH session a current board instead of letting a compacted one keep judging.**
 
-- **You notice summarization, or early-session details feel fuzzy** ("I think" instead of "I know"): finish in-flight reviews cheaply, run one final board update, STOP dispatching. Tell the user: "Board is current — resume with `/justkeepswimming:go {plan}`." Do not start "one more phase" first; that instinct is the failure mode.
+- **End the shift at a boundary, on purpose.** A shift = sprints until a natural boundary (current batch integrated + board current) reached while the session is still sharp. When the transcript is getting heavy — several sprints supervised, many reports absorbed — end the shift AT that boundary: final board update, then "Board is current — resume with `/justkeepswimming:go {plan}` in a fresh session." Do not wait for a compression signal; by the time you notice one, judgment has already degraded.
+- **Late signal** (you notice summarization, or early-session details feel fuzzy — "I think" instead of "I know"): finalize immediately — finish in-flight reviews cheaply, one final board update, STOP dispatching. Never start anything new, including "one small phase."
+- **Never push a compacted orchestrator through more sprints.** "The summary kept everything important" is unverifiable from the inside; a fresh session with a current board is strictly better and costs two reads.
+- In-flight dev agents at shift end are fine — their work sits in the workspace; the board notes which phases were mid-flight so the next shift re-reviews or re-dispatches them.
 - **All lanes blocked on user input**: board update, list the blockers, end the turn.
 - **User says stop/handoff** at any time: board update, report state.
-- In-flight dev agents at session end are fine — their work sits in the workspace; the board notes which phases were mid-flight so the next session re-reviews or re-dispatches them.
 
-There is no phase-count ceiling in v2 — a lean orchestrator outlasts any fixed budget. The compression signal is the only clock that matters, and an always-current board means even missing it loses one sprint, not a session.
+There is no phase-count ceiling in v2 — shifts end on boundaries, not budgets. And an always-current board means even a crash loses one sprint, not a session.
 
 ## 8. Maintenance (post-delivery)
 
@@ -223,6 +238,8 @@ Entered from §1 when a completed plan's work needs a bug fix, change, or invest
 | "Review's overkill for this small phase" | Rework escaping to a later sprint costs 10× the review. Gate everything. |
 | "The target branch moved — I'll rebase real quick" | Other agents have WIP in that tree. Defer the merge; next window. |
 | "One more phase, then I'll finalize the board" | Compression already started. Finalize NOW. |
+| "No compression signal yet — one more sprint fits" | Shifts end at boundaries, not at the cliff. Heavy transcript + clean boundary = end the shift. |
+| "A top-tier review gate seems wasteful" | The gate is the cheapest insurance you buy. Economize in the dev lanes, never at the gate. |
 | "I'll spawn a fresh agent to fix the reviewer's findings" | The original dev's context is warm and cached. Message it. |
 </red-flags>
 

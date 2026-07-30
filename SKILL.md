@@ -28,6 +28,8 @@ For full instructions, read: `commands/justkeepswimming/night-build.md`
 - **The scrum master model** — the orchestrator's context holds decisions and coordination; parallel dev agents own disjoint files and return ≤25-line reports; only the scrum master touches git
 - **Open-door integration** — one worktree/branch per plan kept open across sprints and sessions; merge windows integrate and deploy finished phases while agents keep working; teardown happens once, at completion
 - **Review gates** — every phase is adversarially reviewed before merge; fixes go back to the same warm agent
+- **Tier doctrine** — the strongest model orchestrates (never downgraded, never compacted); one tier down develops; two tiers down take rote lanes; high effort is reserved for review gates, and the riskiest surfaces get the orchestrator's model as reviewer
+- **Fresh sessions over compaction** — work in shifts that end at clean board boundaries; a new session resumes from two reads instead of a compacted orchestrator continuing with silently degraded judgment
 - **Token economy** — delegate the noise, one-read resume, cache-aligned context, right-sized models, review-before-merge to kill rework
 - **Thinking Protocol** (six principles for systematic problem-solving): diagnose before prescribing, trace the full chain, check what's actually there, know silent failures, minimum effective intervention, resist "the usual fix" — see `THINKING.md`
 - **Maintenance mode** for post-delivery debugging with structured investigation logs
