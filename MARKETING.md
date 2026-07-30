@@ -1,121 +1,74 @@
 # Just Keep Swimming
 
-### Your AI agent forgot what it was doing. Again.
+### Your AI agent doesn't need a better memory. It needs a scrum master.
 
 ---
 
-You're three hours into a complex refactor with Claude Code. The agent has been brilliant — it found the right architecture, made smart trade-offs, built out two phases of your plan. Then the context window fills up.
+You hand Claude Code a nine-phase plan at 6pm. You check in the next morning and it's on phase 2, politely asking a question it already answered itself around midnight. Somewhere in between, the context window filled up, the early decisions got compressed into fog, and the agent kept going anyway, slower and dumber with every phase.
 
-The system compresses. And suddenly your agent is making decisions that contradict everything it figured out an hour ago. It re-asks questions you already answered. It breaks the caching layer it just built because it forgot *why* it was built that way.
+The first version of Just Keep Swimming attacked that problem with handoff documents: write everything down before you forget it. It worked, and thousands of installs later the pattern held up. But it treated the symptom. The agent still executed one phase at a time, still burned its own context reading source files, and still stopped after two phases because a hard budget said so. The handoff pile grew with every session, and each resume read all of it.
 
-**This is context rot.** And every developer using AI agents hits it eventually.
+v2 treats the cause.
 
 ---
 
-## One command. Zero context loss.
-
-**Just Keep Swimming** is a single skill for Claude Code that solves context rot with a dead-simple approach:
-
-> Before the agent forgets, make it write down everything it knows.
+## One agent coordinates. Many agents build.
 
 ```
 /justkeepswimming:go my-feature
 ```
 
-That's it. The agent creates a plan, executes it phase by phase, and — here's the magic — **automatically creates detailed handoff documents before context degrades.** Every architecture decision. Every edge case discovered. Every file and line number touched. All preserved for the next session.
+In v2, the session you're talking to stops being a developer and becomes a scrum master. It reads the plan, works out which phases are independent, and dispatches parallel dev agents, each one owning its own set of files. The orchestrator never opens a source file itself. It reads two things: the plan and the board. Its context holds decisions, not file dumps.
 
----
+That single change is why one session can now supervise ten phases instead of executing two.
 
-## How it works
+The agents don't step on each other because they can't. File ownership is assigned per sprint and is disjoint by construction. Shared files like route tables and manifests are touched only by the orchestrator, at merge time. And only the orchestrator runs git, which removes the whole category of two-agents-commit-at-once disasters.
 
-**Session 1**: Agent works through phases 1-2 of your plan. Context getting heavy. It automatically writes a handoff capturing everything it learned — the Redis key scheme, the auth edge case, the cache TTL it chose and why.
+## The door stays open
 
-**Session 2**: You run `/justkeepswimming:go my-feature`. Agent reads the handoff. Picks up exactly where session 1 left off. Knows everything session 1 knew. Completes phases 3-4. Writes another handoff.
+Most agent workflows treat integration as a ceremony: finish everything, then merge, then tear down, then start over for the next batch. v2 keeps one workspace open for the life of the plan. When a phase passes review, the orchestrator dispatches the next sprint first and merges second, so development and integration overlap. Finished work ships while unfinished work is still being written. Nobody waits, and nothing gets hoarded for a big-bang merge at the end.
 
-**Session 3**: Same thing. Cumulative context from sessions 1 AND 2 is condensed into one section. The agent reads ONE document and has everything.
+## Reviewed before merged, every time
 
-**No knowledge is ever lost.**
+Every phase goes through an adversarial review gate before its merge window. Real findings go back to the same agent that wrote the code, because that agent's context is warm and a fresh one would start from zero. Two failed review rounds and the phase gets parked on the board for a human instead of looping forever.
 
----
+Rework that escapes into a later sprint is the most expensive thing in agent-driven development. The gate exists to catch it while it's still cheap.
 
-## Two modes for two workflows
+## The board replaces the handoff pile
 
-### Autonomous *(default)*
-The agent just keeps swimming. Executes continuously, creates handoffs on its own when context gets heavy. You come back to a completed plan or a clean handoff ready for the next session.
+Each plan keeps one live document, BOARD.md: phase states, commit SHAs, settled decisions, accumulated learnings, open blockers. It's updated at every sync point, not at session end, so a crash loses one sprint at most. Resuming a plan means reading two files, whether it's session 2 or session 20.
 
-```
-/justkeepswimming:go api-migration
-```
-
-### Interactive
-Pauses after each phase. You review, adjust, redirect. The agent waits for your call.
+And because self-reported state drifts, the board gets audited. A zero-dependency script that ships with the plugin checks it against git itself: a phase marked merged must point at a commit that exists and is actually on the integration branch, the progress count must match the table, and a door marked open must appear in `git worktree list`. If the board lies, the agent has to fix it from git evidence before it's allowed to dispatch anything else.
 
 ```
-/justkeepswimming:go api-migration --interactive
+$ node scripts/board-check.js api-migration
+  ❌ FAIL: "Phase 3": commit 9f3ab12 is NOT on main — state says merged
 ```
 
----
+## Fresh sessions beat compaction
 
-## What's in a handoff?
+When a long session's context gets compacted, the loss is silent. The agent doesn't know what it forgot, and neither do you, until it makes a call that contradicts a decision from four hours ago. So v2 works in shifts: run sprints until a clean boundary, update the board, end the session on purpose, resume fresh. A new session with a current board has full acuity. A compacted one just has confidence.
 
-Each handoff document captures:
+## The right model for each seat
 
-- **Progress** — "4 of 6 phases complete (67%)"
-- **Completed work** — exact `file.js:42` references, not vague summaries
-- **Remaining work** — what's left from the plan
-- **Blockers** — issues that need human input (surfaced on resume)
-- **Plan amendments** — where reality diverged and why
-- **Key learnings** — architecture insights, data shapes, gotchas
-- **Cumulative context** — condensed knowledge from ALL prior sessions
-- **Next steps** — exactly which files to read first and what to focus on
+v2 assigns models the way you'd staff a team. The strongest model available runs the orchestrator seat and never gets downgraded. Dev agents run one tier down; their depth comes from owning one phase and a handful of files, not from model size. Renames and boilerplate go two tiers down at low effort. Review gates run at high effort, and anything touching security or data loss gets reviewed by the orchestrator's own model. With the Claude 5 family, that means Fable coordinates while Opus builds and Sonnet handles the grunt work, each one earning its cost.
 
----
+## Sized to the job
 
-## Agents that think, not just execute
+Not everything deserves a board. A half-day fix runs in the lite lane: one LITE.md file with a goal, a checklist, and an outcome, executed inline with a single review gate at the end. If the "small fix" turns out to be systemic, the skill graduates it to a full plan rather than stretching a one-file workflow across sessions.
 
-Most AI agents fail the same way: they pattern-match to common fixes and try them one by one until something sticks. When a build fails, they retry. When a config doesn't work, they regenerate it. They're **solution-guessers** — and guessing doesn't scale.
+And when you come back after a few days and can't remember what was in flight, just run the command bare. It prints a one-line status for every plan and resumes the most recent active one. `go status` gives you the table and stops there.
 
-Just Keep Swimming includes a **Thinking Protocol** — six principles injected into every agent session that fundamentally change how the agent approaches problems:
+## There's also a night shift
 
-> **Don't be a solution-guesser. Be a condition-verifier.**
+`/justkeepswimming:night-build` is the end-of-day sweep: it baselines against the last run, fans out parallel reviewers over the day's commits, fixes what it's confident about, defers what it isn't (with file and line references), runs your tests, ships through your project's own release path, and writes a summary for the morning. A day with no commits produces a one-line report. That's a feature.
 
-Instead of trying the top-5 StackOverflow answers, the agent lists every condition required for success and verifies each one. The broken condition reveals itself — no guessing needed.
+## Still light
 
-This is how the best human engineers debug. Now your agent does it too.
-
-The protocol is customizable. Add your team's hard-won debugging lessons to `THINKING.md` and every future session inherits them. Your agents get smarter over time — not because the model improved, but because your accumulated knowledge is injected into every session.
+Two command files, one methodology doc, one audit script. State is markdown in your repo, plus git, which you already have. No daemons, no databases, no configuration wizard. The Thinking Protocol that made v1 agents debug like senior engineers is still injected into every session, and you can still extend it with your own team's hard-won lessons in THINKING.md.
 
 ---
 
-## Lightweight by design
+**Works with any Claude Code project.** Subagent support unlocks the scrum lane; without it, the solo and lite lanes run everywhere. Pairs well with the superpowers plugin for plan generation, or bring your own plan.
 
-No state files. No milestones. No roadmaps. No verification agents. No parallel planners.
-
-**Just a plan, execution, and handoff documents.**
-
-One command file. 200 lines. Install in 10 seconds:
-
-```bash
-mkdir -p ~/.claude/commands/justkeepswimming
-cp go.md ~/.claude/commands/justkeepswimming/
-```
-
-Compare that to workflow systems with 30+ files and a learning curve.
-
----
-
-## The key insight
-
-> Context compression is inevitable. Knowledge loss is not.
-
-The best time to document what you know is *before you forget it.* Just Keep Swimming forces that discipline — not through ceremony or process overhead, but through a single, automatic protocol that fires at the right moment.
-
-Your agent doesn't fight the context window. It works *with* it.
-
----
-
-**Works with any Claude Code project. No dependencies required.**
-
-Pairs beautifully with the [superpowers plugin](https://github.com/anthropics/claude-code) for auto-generated plans, but you can bring your own plan too.
-
-Apache 2.0 License.
+Apache 2.0 License. [GitHub](https://github.com/cyber-qais/justkeepswimming) · [npm](https://www.npmjs.com/package/justkeepswimming)

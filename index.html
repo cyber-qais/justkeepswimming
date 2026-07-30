@@ -615,7 +615,7 @@
     <div class="container">
         <div class="section-label">The Problem</div>
         <h2>Context rot is <span>silent</span> and <span>expensive</span></h2>
-        <p>When an AI agent's context window fills up, the system compresses earlier messages. Nuanced details vanish. The agent keeps working &mdash; but now it's making subtly wrong decisions.</p>
+        <p>When an AI agent's context window fills up, the system compresses earlier messages and the agent keeps working on subtly wrong assumptions. On big plans the damage compounds: phases run one at a time even when they're independent, and the agent burns its own context reading source files until its early decisions turn to fog.</p>
         <div class="problem-grid">
             <div class="problem-card">
                 <div class="icon">&#128260;</div>
@@ -640,8 +640,8 @@
 <section class="solution">
     <div class="container">
         <div class="section-label">The Solution</div>
-        <h2>Write it down <span>before</span> you forget</h2>
-        <p>Just Keep Swimming makes the agent document everything it knows <em>before</em> context degrades &mdash; automatically, with zero ceremony.</p>
+        <h2>One agent <span>coordinates</span>. Many agents build.</h2>
+        <p>v2 turns your session into a scrum master. It dispatches parallel dev agents with disjoint file ownership, reviews every phase before merging, ships as it goes, and keeps one live board so any session can resume from two file reads.</p>
         <div class="flow">
             <div class="flow-step">
                 <div class="step-num">1</div>
@@ -651,20 +651,20 @@
             <div class="flow-arrow">&rarr;</div>
             <div class="flow-step">
                 <div class="step-num">2</div>
-                <h3>Execute</h3>
-                <p>Work through phases continuously</p>
+                <h3>Dispatch</h3>
+                <p>Parallel dev agents, each owning its files</p>
             </div>
             <div class="flow-arrow">&rarr;</div>
             <div class="flow-step">
                 <div class="step-num">3</div>
-                <h3>Handoff</h3>
-                <p>Capture full context before it fades</p>
+                <h3>Review &amp; merge</h3>
+                <p>Adversarial gate, then ship while the next sprint runs</p>
             </div>
             <div class="flow-arrow">&rarr;</div>
             <div class="flow-step">
                 <div class="step-num">4</div>
-                <h3>Resume</h3>
-                <p>Next session picks up seamlessly</p>
+                <h3>Board</h3>
+                <p>Live state; any session resumes from two reads</p>
             </div>
         </div>
     </div>
@@ -674,47 +674,47 @@
 <section class="features">
     <div class="container">
         <div class="section-label">Features</div>
-        <h2>Everything you need. <span>Nothing you don't.</span></h2>
+        <h2>What's <span>in the box</span></h2>
         <div class="feature-grid">
             <div class="feature-card">
                 <div class="badge badge-blue">Core</div>
-                <h3>Automatic handoffs</h3>
-                <p>The agent monitors its own context health and creates handoff documents automatically when things get heavy. No manual intervention needed.</p>
+                <h3>The live board</h3>
+                <p>One BOARD.md per plan holds phase states, commit SHAs, decisions, and learnings with exact file:line references. Updated at every sync point, so a crash loses one sprint at most.</p>
             </div>
             <div class="feature-card">
                 <div class="badge badge-green">Smart</div>
-                <h3>Cumulative context</h3>
-                <p>Each handoff condenses ALL prior sessions' knowledge. The next agent reads one document &mdash; not five &mdash; and has everything.</p>
+                <h3>Audited against git</h3>
+                <p>scripts/board-check.js verifies every merged claim, the progress count, the ship SHA, and the door state against git itself. A board that lies blocks dispatch until it's fixed.</p>
             </div>
             <div class="feature-card">
                 <div class="badge badge-amber">Flexible</div>
-                <h3>Two execution modes</h3>
-                <p>Autonomous (just keep swimming) or interactive (pause for review). Switch with a single flag.</p>
+                <h3>Three lanes</h3>
+                <p>Lite for half-day jobs (one file, one gate), solo for small serial plans, scrum for parallel agent orchestration. Route by flag or by scope.</p>
             </div>
             <div class="feature-card">
                 <div class="badge badge-blue">Precise</div>
-                <h3>File:line references</h3>
-                <p>Handoffs include exact file paths and line numbers. No vague summaries &mdash; the next agent knows exactly where to look.</p>
+                <h3>The tier doctrine</h3>
+                <p>The strongest model orchestrates, one tier down develops, rote lanes go two tiers down, and the riskiest review gates use the orchestrator's own model. Every model earns its cost.</p>
             </div>
             <div class="feature-card">
                 <div class="badge badge-purple">Tracked</div>
-                <h3>Blockers & amendments</h3>
-                <p>Blockers are surfaced on resume. Plan amendments capture where reality diverged. Nothing falls through the cracks.</p>
+                <h3>Review gates</h3>
+                <p>Every phase is adversarially reviewed before its merge. Fixes go back to the same warm agent; two failed rounds parks the phase for a human instead of looping.</p>
             </div>
             <div class="feature-card">
                 <div class="badge badge-green">Light</div>
                 <h3>One plugin, zero config</h3>
-                <p>Install with a single command. No state files, no setup wizards. Plans and handoffs are just markdown in your repo.</p>
+                <p>Install with a single command. No daemons, no setup wizards. Plans and boards are markdown in your repo, plus one small audit script.</p>
             </div>
             <div class="feature-card">
                 <div class="badge badge-purple">Autonomous</div>
                 <h3>Night build pipeline</h3>
-                <p>End-of-day command that reviews commits, code reviews, builds, deploys, writes a summary, and pushes to git. Fully unattended.</p>
+                <p>End-of-day sweep: parallel reviewers over the day's commits, confident fixes applied, tests, deploy through your release path, summary for the morning. Fully unattended.</p>
             </div>
             <div class="feature-card">
                 <div class="badge badge-amber">Adaptive</div>
-                <h3>Context-aware budgets</h3>
-                <p>Detects your context window size (200k vs 1M) and sets hard phase limits. No "just one more thing" &mdash; it hands off before context degrades.</p>
+                <h3>Fresh sessions, not compaction</h3>
+                <p>Sessions run in shifts that end at clean board boundaries. The next session resumes with full acuity instead of a compacted one guessing at what it forgot.</p>
             </div>
             <div class="feature-card">
                 <div class="badge badge-blue">Instant</div>
@@ -733,48 +733,40 @@
 <!-- Handoff Preview -->
 <section class="handoff-preview">
     <div class="container">
-        <div class="section-label">Handoff Document</div>
-        <h2>What a handoff <span>actually looks like</span></h2>
-        <p>Real context preservation, not a vague summary. This is what the next session reads to restore full context.</p>
+        <div class="section-label">The Board</div>
+        <h2>What the board <span>actually looks like</span></h2>
+        <p>Live state, not an archaeology dig. This is everything a fresh session reads to take over, and the checker verifies it against git before any work is dispatched.</p>
         <div class="handoff-doc">
             <div class="handoff-doc-header">
                 <span class="dot" style="background:#ef4444"></span>
                 <span class="dot" style="background:#f59e0b"></span>
                 <span class="dot" style="background:#10b981"></span>
-                &nbsp; 2026-03-12-handoff-001.md
+                &nbsp; BOARD.md
             </div>
             <div class="handoff-doc-body">
-<span class="hl"># Handoff &mdash; API Migration &mdash; Session 001</span>
+<span class="hl"># Board &mdash; API Migration</span>
 
-<span class="dim">**Date**: 2026-03-12 14:30</span>
-<span class="dim">**Progress**: 2 of 6 phases complete (~33%)</span>
+<span class="dim">**Updated**: 2026-03-13 22:41 &middot; **Door**: wt-api-migration (open)</span>
+<span class="dim">**Progress**: 4/6 phases merged &middot; **Shipped**: abc1234</span>
 
-<span class="hl">## Completed This Session</span>
-<span class="hg">- [x] Phase 0: Extract database queries &mdash; `services/database/_core.js:45-120`</span>
-<span class="hg">- [x] Phase 1: Create service interfaces &mdash; `services/api/userService.js:1-85`</span>
+<span class="hl">## Status</span>
+<span class="hg">| 3. Auth middleware | merged | Dev-3 | middleware/auth.js | e19af02 |
+| 4. Session store   | merged | Dev-4 | services/session.js | b7d2c11 |</span>
+| 5. Rate limiting   | review | Dev-5 | services/rateLimiter.js | &mdash; |
+| 6. Legacy cutover  | todo   |  &mdash;    | routes/*.js | &mdash; |
 
-<span class="hl">## Remaining Work</span>
-- [ ] Phase 2: Route migration (12 route files)
-- [ ] Phase 3: Cache layer separation
-- [ ] Phase 4: WebSocket event routing
-- [ ] Phase 5: Integration testing
+<span class="hl">## Decisions (settled)</span>
+- merge: FF to main &middot; deploy: npm run deploy &middot; checks: npm test
 
-<span class="hl">## Blockers &amp; Open Questions</span>
-<span class="hr">- Blocker: Task deadline queries use nested Firebase paths that
-  don't support inequality filters &mdash; need to restructure or
-  use client-side filtering</span>
+<span class="hl">## Learnings (cumulative)</span>
+<span class="ha">- Redis keys follow `user:{id}:session` (TTL 30min)
+- Rate limiter must exempt /health &mdash; `services/rateLimiter.js:88`</span>
 
-<span class="hl">## Key Learnings (This Session)</span>
-<span class="ha">- Redis cache keys follow `conv:{userId}:{convId}` scheme
-- Users cache has 60-min TTL with stampede protection
-- `_trackedRead()` is mandatory for all Firebase reads
-- Database service is 700KB+ &mdash; splitting by collection
-  is the right granularity</span>
+<span class="hl">## Blockers</span>
+<span class="hr">- P6 waits on the DNS cutover window (user decision)</span>
 
-<span class="hl">## Next Session</span>
-1. <span class="hg">Read first</span>: `routes/messages.js:200-350` (heaviest route)
-2. <span class="hg">Focus</span>: Phase 2 &mdash; migrate routes one at a time
-3. <span class="ha">Watch out for</span>: circular deps in socketService
+<span class="hg">$ node scripts/board-check.js api-migration
+  BOARD OK &mdash; 5 checks, 6 phases, 0 warnings</span>
             </div>
         </div>
     </div>
@@ -788,12 +780,12 @@
         <div class="mode-comparison">
             <div class="mode-card primary">
                 <h3>Autonomous <span class="mode-tag">Default</span></h3>
-                <p>The agent executes continuously, creating handoffs on its own. Come back to progress or a clean handoff.</p>
+                <p>Runs sprint after sprint and keeps the board current. Invoke it bare to resume the most recent active plan; <code>go status</code> just reports.</p>
                 <code>/justkeepswimming:go my-feature</code>
             </div>
             <div class="mode-card">
                 <h3>Interactive <span class="mode-tag">--interactive</span></h3>
-                <p>Pauses after each phase. Review results, adjust the plan, decide when to continue or hand off.</p>
+                <p>Pauses at sprint boundaries. Review results, adjust the plan, decide when to continue.</p>
                 <code>/justkeepswimming:go my-feature --interactive</code>
             </div>
         </div>
@@ -821,18 +813,18 @@
                 </tr>
                 <tr>
                     <td><strong>State tracking</strong></td>
-                    <td>Handoff docs only</td>
+                    <td>One live board, audited against git</td>
                     <td>STATE.md, ROADMAP.md, CONTEXT.md, etc.</td>
                 </tr>
                 <tr>
                     <td><strong>Concepts to learn</strong></td>
-                    <td>Plan, Execute, Handoff</td>
+                    <td>Plan, Board, Sprint, Merge window</td>
                     <td>Projects, Milestones, Phases, Waves, Audits</td>
                 </tr>
                 <tr>
-                    <td><strong>Agent spawning</strong></td>
-                    <td>None</td>
-                    <td>Planners, Executors, Verifiers, Researchers</td>
+                    <td><strong>Parallelism</strong></td>
+                    <td>File-ownership lanes, review gates, one git owner</td>
+                    <td>Unmanaged, or none</td>
                 </tr>
                 <tr>
                     <td><strong>Setup time</strong></td>
@@ -846,7 +838,7 @@
                 </tr>
                 <tr>
                     <td><strong>Commands</strong></td>
-                    <td>2 (plan + night build)</td>
+                    <td>2 commands + a status call</td>
                     <td>10+ specialized agents</td>
                 </tr>
             </tbody>
@@ -898,7 +890,7 @@
 
         <div class="thinking-meta">
             <blockquote>"Don't be a solution-guesser. Be a condition-verifier."</blockquote>
-            <p>Every condition required for success must be verified. The one you skip is the one that's broken. The protocol is customizable &mdash; add your team's debugging lessons to THINKING.md and every future session inherits them.</p>
+            <p>Every condition required for success must be verified. The one you skip is the one that's broken. v2 adds the Orchestrator's Corollary for scrum-lane work: delegate the noise, keep the signal. The protocol is customizable. Add your team's debugging lessons to THINKING.md and every future session inherits them.</p>
         </div>
     </div>
 </section>
@@ -946,7 +938,7 @@ cp commands/justkeepswimming/*.md ~/.claude/commands/justkeepswimming/</code>
 
 <!-- Footer -->
 <footer>
-    <p><strong>Just Keep Swimming</strong> &mdash; Apache 2.0 License</p>
+    <p><strong>Just Keep Swimming</strong> v2.3 &middot; Apache 2.0 License</p>
     <p style="margin-top:0.5rem;">Made for <a href="https://docs.anthropic.com/en/docs/claude-code">Claude Code</a> by <a href="https://github.com/cyber-qais">Qais Alkurdi</a></p>
     <p style="margin-top:0.5rem; font-size: 0.8rem; color: var(--slate-400);">
         <a href="https://github.com/cyber-qais/justkeepswimming">GitHub</a> &middot;
