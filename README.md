@@ -91,7 +91,9 @@ Fully autonomous. No prompts. Adapts to any project.
 
 | Flag | Effect |
 |:-----|:-------|
-| *(none)* | Autonomous mode. Execute continuously; the board stays current. |
+| *(no arguments at all)* | Status table of every plan, then auto-resume the most recent active one. |
+| `status` | Status table only — no resume, no dispatch. |
+| `<plan-name>` (no flags) | Autonomous mode on that plan. Execute continuously; the board stays current. |
 | `--lite` | Half-day lane: one LITE.md, inline execution, one end review gate. |
 | `--solo` | Force inline execution (no agent orchestration). |
 | `--interactive` | Pause at sprint boundaries for review. |

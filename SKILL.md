@@ -32,6 +32,7 @@ For full instructions, read: `commands/justkeepswimming/night-build.md`
 - **Fresh sessions over compaction** — work in shifts that end at clean board boundaries; a new session resumes from two reads instead of a compacted orchestrator continuing with silently degraded judgment
 - **The board is audited, not trusted** — `scripts/board-check.js` verifies every merged/shipped claim, the progress count, the ship SHA, and the door state against git truth; it runs at resume, after every merge window, and before completion
 - **Lite lane** for half-day work — one LITE.md file, inline execution, a single end-of-work review gate; graduates to a full board the moment scope outgrows a sitting
+- **Bare `go` picks up where you left off** — no arguments prints a one-line status of every plan and auto-resumes the most recently updated active one; `go status` prints the table and stops
 - **Token economy** — delegate the noise, one-read resume, cache-aligned context, right-sized models, review-before-merge to kill rework
 - **Thinking Protocol** (six principles for systematic problem-solving): diagnose before prescribing, trace the full chain, check what's actually there, know silent failures, minimum effective intervention, resist "the usual fix" — see `THINKING.md`
 - **Maintenance mode** for post-delivery debugging with structured investigation logs

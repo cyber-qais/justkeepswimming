@@ -1,7 +1,7 @@
 ---
 name: justkeepswimming:go
 description: Scrum-master plan execution — run a multi-phase plan with parallel dev agents, a live board, review gates, and open-door merge windows that ship while agents keep working
-argument-hint: "[plan-name] [--lite] [--solo] [--interactive] [--from-context] [--now]"
+argument-hint: "[plan-name|status] [--lite] [--solo] [--interactive] [--from-context] [--now]"
 allowed-tools:
   - Read
   - Write
@@ -68,9 +68,17 @@ PLAN.md ─► sprint plan ─► dispatch devs (parallel) ─► review gate �
 
 ## 1. Route
 
-Parse `$ARGUMENTS`: flags `--lite` (half-day lane, §4b), `--solo` (force inline execution), `--interactive`, `--from-context` (synthesize the plan from this conversation), `--now` (implies `--from-context`, skip all confirmations). Everything else is the plan name.
+Parse `$ARGUMENTS`: flags `--lite` (half-day lane, §4b), `--solo` (force inline execution), `--interactive`, `--from-context` (synthesize the plan from this conversation), `--now` (implies `--from-context`, skip all confirmations). `status` alone → status report (below). Everything else is the plan name.
 
-- **No plan name**: list existing dirs in `docs/justkeepswimming/` (mark completed ones — SUMMARY.md exists). Ask: resume one or start new?
+- **No plan name — orient, then keep swimming; don't interrogate:**
+  1. Scan `docs/justkeepswimming/*/` and classify each plan from which files exist: **COMPLETE** (SUMMARY.md) · **ACTIVE** (BOARD.md or LITE.md, no SUMMARY.md) · **LEGACY-ACTIVE** (handoffs, no BOARD.md/SUMMARY.md) · **PLANNED** (PLAN.md only). Recency = the board's **Updated** line (file mtime as fallback).
+  2. Print the one-line status table — from BOARD.md/LITE.md **header lines only** (Updated/Progress/Door/Next), never full-reading boards you aren't resuming:
+     `{plan} · {state} · {X}/{Y} merged · door {open|closed} · updated {when} · next: {one-line focus}`
+  3. Route:
+     - **≥1 ACTIVE (or LEGACY-ACTIVE)** → auto-resume the most recently updated one via §3: "Continuing {plan} — most recent active. Name another plan to switch." Do not ask permission to continue work that's already in flight.
+     - **None active, some PLANNED** → offer to start the most recent planned one.
+     - **Only complete plans, or none at all** → show the table (or "no plans yet") and ask: new plan, follow-up from a summary, or maintenance?
+- **`status` given as the argument** → print the same table and stop. No resume, no dispatch.
 - **SUMMARY.md exists**: plan is COMPLETE. Offer: review summary / follow-up plan from its recommendations / **maintenance** (§8) / fresh plan. If the user's message already describes a bug or change ("X is broken"), skip the menu → §8 Maintenance.
 - **LITE.md exists (no PLAN.md)** → resume the lite job (§4b): read LITE.md, continue — or graduate if it's outgrown the lane.
 - **`--lite`, or the ask is obviously ≤ half a day** → §4b Lite lane (no PLAN.md ceremony).
