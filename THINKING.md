@@ -126,3 +126,18 @@ Stuck? Run through this:
 | Could something be failing silently? | Check fallback behaviors and strict modes |
 | Am I about to change more than the root cause? | Scale back to minimum fix |
 | Did the user already try this? | Try a different layer |
+
+---
+
+## The Orchestrator's Corollary (v2)
+
+The six principles govern how you solve problems. When you run a plan as the **scrum master** (JKS v2 scrum lane), one more resource discipline applies:
+
+> **Delegate the noise. Keep the signal.**
+
+Your context is the project's memory — the only place where decisions, learnings, and state live between tool calls. Every file you read yourself, every diff you paste, every log you tail crowds out a decision you'll need later.
+
+- **Noise** (delegate to agents): reading source files, tracing implementations, raw diffs, build logs, test output beyond pass/fail.
+- **Signal** (keep): the plan, the board, decisions and their rationale, ≤25-line agent reports, verdicts.
+
+The corollary to the meta-rule: **every condition still gets verified — just not all by you.** Agents verify conditions in their own context and report the result; you verify that the verification happened. An orchestrator who "quickly checks" ten files has become a developer with amnesia.

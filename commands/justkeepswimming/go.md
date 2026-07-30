@@ -1,7 +1,7 @@
 ---
 name: justkeepswimming:go
-description: Lightweight plan management with context-aware handoffs to prevent context rot during multi-phase implementations, including structured post-delivery debugging and maintenance
-argument-hint: "[plan-name] [--interactive] [--from-context] [--now]"
+description: Scrum-master plan execution — run a multi-phase plan with parallel dev agents, a live board, review gates, and open-door merge windows that ship while agents keep working
+argument-hint: "[plan-name] [--solo] [--interactive] [--from-context] [--now]"
 allowed-tools:
   - Read
   - Write
@@ -10,456 +10,254 @@ allowed-tools:
   - Grep
   - Bash
   - Agent
+  - SendMessage
   - AskUserQuestion
   - Skill
 ---
 
+# Just Keep Swimming v2 — the scrum master model
+
 <thinking-protocol>
 ## HOW YOU THINK MATTERS MORE THAN WHAT YOU DO
 
-Before executing ANY work — debugging, building, investigating, or planning — internalize and apply the Thinking Protocol from `THINKING.md` in the skill root. These six principles are non-negotiable:
+Before executing ANY work, internalize the Thinking Protocol from `THINKING.md` in the skill root:
 
-1. **Diagnose before you prescribe.** Never jump to a solution. Gather facts first. Every minute understanding the problem saves ten minutes of wrong-direction fixes.
-2. **Trace the full chain.** List every condition required for success. Verify each one independently. The broken condition is always the one nobody checks because it's "too basic."
-3. **Check what's actually there, not what you expect.** Run diagnostics with an open mind. Read the output — don't skim for confirmation. The fix often surfaces from an anomaly you noticed while checking something else.
-4. **Know the silent failures.** Systems fail without useful errors all the time — they fall back, return generic messages, or silently skip the broken path. When something "should work but doesn't," look for the silent failure nobody checked.
-5. **Minimum effective intervention.** Fix the root cause and only the root cause. The best fix is the smallest change. If you changed more than needed, you didn't understand the problem well enough.
-6. **Resist the gravitational pull of "the usual fix."** If the user says they've tried everything, the answer lives in the layer nobody checked. Don't re-run the playbook — find the unverified condition.
+1. **Diagnose before you prescribe.** Gather facts first; never jump to a solution.
+2. **Trace the full chain.** List every condition required for success; verify each. The broken one is the one nobody checks.
+3. **Check what's actually there, not what you expect.** Read output with an open mind — the fix often surfaces from an anomaly.
+4. **Know the silent failures.** When something "should work but doesn't," look for the fallback nobody checked.
+5. **Minimum effective intervention.** Fix the root cause and only the root cause.
+6. **Resist the usual fix.** If they've "tried everything," the answer lives in the unverified layer.
 
-**The meta-rule:** Every condition required for success must be verified. The one you skip is the one that's broken. Don't be a solution-guesser. Be a condition-verifier.
-
-**Apply this at every phase:** When a build fails, list what must be true and verify each. When code doesn't behave as expected, trace the full execution chain. When something worked yesterday and doesn't today, find what changed — don't guess. When blocked, check one layer deeper than where you stopped.
-
-**Quick gut check when stuck:**
-- Have I listed ALL conditions for success? → If no, stop and list them.
-- Have I verified EACH condition empirically? → Verify the ones I skipped.
-- Am I pattern-matching to a common fix? → Step back and check the full chain.
-- Could something be failing silently? → Check fallback behaviors and strict modes.
-- Am I about to change more than the root cause? → Scale back to minimum fix.
+**The meta-rule:** every condition required for success must be verified. The one you skip is the one that's broken.
 </thinking-protocol>
 
 <prime-directive>
-## THE HANDOFF IS THE DELIVERABLE
+## TWO LAWS
 
-Code changes without a handoff are a **FAILURE** unless the entire execution can happen within one session before context is exhausted. The entire purpose of this skill is to preserve context across sessions. An exhausted context with no handoff means all nuance, learnings, and decisions from this session are **permanently lost**.
+**1. THE BOARD IS THE DELIVERABLE.** `docs/justkeepswimming/{plan}/BOARD.md` reflects true project state at ALL times. You update it at every sync point — after each review gate, each merge window, each decision — not at session end. If this session died right now, the next session must lose nothing. You cannot detect your own context usage; a board that is always current makes the question irrelevant.
 
-**Rules that override everything else:**
-1. **Never start a phase you can't finish AND hand off.** If you've already completed 1-2 phases, the handoff IS your next task — not the next phase.
-2. **A handoff created "too early" wastes nothing.** A handoff created too late (or never) wastes the entire session.
-3. **You cannot detect your own context usage percentage.** You MUST use the concrete triggers below — do not try to "feel" whether you have room left.
-4. **After completing ANY phase, your FIRST action is to evaluate handoff triggers** — not to start the next phase.
+**2. YOU ARE THE SCRUM MASTER, NOT A DEVELOPER.** On multi-phase plans your context is the project's memory — spend it on decisions, coordination, and the board, never on file contents. Developers (subagents) are disposable; your context is not. Any work that would pull implementation detail into your context — reading source files, tracing code, writing more than a config tweak — gets delegated. You read plans, boards, and ≤25-line agent reports. That is what lets one session supervise ten phases instead of executing two.
 </prime-directive>
 
 <objective>
-Manage implementation plans with smart handoffs. No state files, no milestones, no ceremony — just a plan, execution, and handoff documents that preserve context when sessions get long.
+Execute multi-phase implementation plans start-to-finish with minimal human intervention, minimum token burn, and no agent stepping on another. Plans live in `docs/justkeepswimming/{plan-name}/`:
 
-Plans live in `docs/justkeepswimming/{plan-name}/`:
 ```
 docs/justkeepswimming/{plan-name}/
-├── PLAN.md                       # Implementation plan
-├── YYYY-MM-DD-handoff-NNN.md     # Session handoff(s)
-└── SUMMARY.md                    # Final summary & next steps (generated on completion)
+├── PLAN.md       # Phases, tasks, per-phase acceptance criteria, dependencies
+├── BOARD.md      # LIVE state: status table, decisions, learnings, next steps (replaces handoff piles)
+├── SUMMARY.md    # Final summary & recommendations (written at completion)
+└── archive/      # Superseded artifacts (legacy handoffs, review scratch)
 ```
 
-**Two execution modes:**
-- **Autonomous** (default): Just keep swimming. Execute phases continuously, create handoffs automatically when context gets heavy. No stopping to ask.
-- **Interactive** (`--interactive`): Pause after each phase for user review. User decides when to continue or handoff.
+**Lanes:** solo (small plans, execute inline) vs **scrum** (3+ phases: orchestrate parallel dev agents).
+**Modes:** autonomous (default — just keep swimming) vs `--interactive` (pause at sprint boundaries).
+
+```
+PLAN.md ─► sprint plan ─► dispatch devs (parallel) ─► review gate ─► merge window ─► ship
+              ▲                                            │       (dispatch NEXT sprint
+              └────────────── BOARD.md update ◄────────────┘        BEFORE integrating —
+                                                                    the door stays open)
+```
 </objective>
 
 <process>
 
-## 1. Determine Mode
+## 1. Route
 
-Parse `$ARGUMENTS` for plan name and flags:
-- `--interactive` flag → interactive execution mode (otherwise autonomous)
-- `--from-context` flag → synthesize PLAN.md from the current conversation context (see New Plan step 3c)
-- `--now` flag → implies `--from-context` AND skips the "Start execution now?" confirmation — synthesize and immediately execute
-- Everything else → plan name
+Parse `$ARGUMENTS`: flags `--solo` (force inline execution), `--interactive`, `--from-context` (synthesize PLAN.md from this conversation), `--now` (implies `--from-context`, skip all confirmations). Everything else is the plan name.
 
-Check filesystem:
-- **No plan name given**: Look for existing plan directories in `docs/justkeepswimming/`. If any exist, list them (marking completed plans) and ask: "Resume an existing plan or start a new one?" If none, go to New Plan.
-- **Plan name given, SUMMARY.md exists**: → Plan is **COMPLETE**. Tell the user: "That plan is complete (SUMMARY.md exists). What would you like to do?"
-  - **Review**: Show the summary
-  - **Follow-up plan**: Create a new plan from the summary's recommendations
-  - **Maintenance**: Debug an issue or make changes related to this plan's work → go to **Section 7**
-  - **Fresh start**: Start a new plan with a different name
-  **Shortcut:** If the user's message clearly describes a bug or change request (e.g., "X is broken" or "change Y"), skip the menu and go directly to Maintenance (Section 7).
-  Do NOT resume or re-execute a completed plan.
-- **Plan name given, no `docs/justkeepswimming/{plan-name}/PLAN.md`**: → **New Plan**
-- **Plan name given, PLAN.md exists, no handoff files**: → **Execute**
-- **Plan name given, PLAN.md exists, handoff files exist**: → **Resume**
+- **No plan name**: list existing dirs in `docs/justkeepswimming/` (mark completed ones — SUMMARY.md exists). Ask: resume one or start new?
+- **SUMMARY.md exists**: plan is COMPLETE. Offer: review summary / follow-up plan from its recommendations / **maintenance** (§8) / fresh plan. If the user's message already describes a bug or change ("X is broken"), skip the menu → §8 Maintenance.
+- **No PLAN.md** → §2 New Plan.
+- **PLAN.md exists** → §3 Resume (BOARD.md or legacy handoffs tell you where things stand; neither existing means fresh execution → §4).
 
 ## 2. New Plan
 
-1. If no plan name provided, ask: "Give your plan a short name (kebab-case, e.g. `microservice-separation`)"
-2. Create `docs/justkeepswimming/{plan-name}/` directory
-3. Determine how to create the plan:
-
-   **a) Default (no flags)** — Ask: **"Want me to create a plan using superpowers, or do you have an existing plan to import?"**
-   - **Create**: Invoke `superpowers:writing-plans` skill. Save result to `docs/justkeepswimming/{plan-name}/PLAN.md` (override the skill's default save location)
-   - **Import**: Ask user to provide the plan (file path or paste). Save to `docs/justkeepswimming/{plan-name}/PLAN.md`
-
-   **b) `--from-context`** — Synthesize a plan from the current conversation. The user has already been discussing requirements, architecture, or approach in this session. Distill everything discussed so far into a structured PLAN.md:
-   - Extract goals, phases, tasks, dependencies, and constraints from the conversation
-   - Organize into the same format that `superpowers:writing-plans` would produce
-   - Include any decisions, constraints, or preferences the user expressed
-   - Save to `docs/justkeepswimming/{plan-name}/PLAN.md`
-   - Show the user a brief outline: "Here's what I captured from our conversation: [phase list]. Anything to add or change?"
-
-   **c) `--now`** — Same as `--from-context` but skip ALL confirmations. Synthesize the plan, save it, and immediately start executing. No "anything to add?", no "start execution now?" — just go.
-
-4. Unless `--now` was used, ask: "Plan saved. Start execution now?"
-5. If yes → go to Execute
+1. Need a name? Ask for kebab-case (`microservice-separation`).
+2. Create the plan (via a plan-writing skill such as `superpowers:writing-plans` if available, or write it yourself; or import the user's existing plan; or `--from-context`: distill goals/phases/decisions already discussed in this conversation). Save to `docs/justkeepswimming/{plan-name}/PLAN.md`.
+3. **PLAN.md must carry, per phase:** goal, tasks, **acceptance criteria** (observable, verifiable), a **Depends-on:** line (phase numbers or "none"), and a rough **files/areas touched** hint. These four power sprint planning — add them if the imported plan lacks them.
+4. Unless `--now`: show the phase list, ask "Start execution now?" With `--now`: go.
 
 ## 3. Resume
 
-1. Read **ALL** `*-handoff-*.md` files in `docs/justkeepswimming/{plan-name}/` — not just the latest. Each contains key learnings and decisions that may not be repeated in later handoffs.
-2. Pay special attention to the **most recent** handoff's "Remaining Work", "Blockers", and "Cumulative Context" sections — this is your primary context restoration.
-3. Read `docs/justkeepswimming/{plan-name}/PLAN.md` for the full plan.
-4. Announce: "Resuming {plan-name} from handoff {NNN}. Previously completed: [summary]. Picking up at: [next item]."
-5. If the latest handoff has unresolved **Blockers**, surface them: "Previous session left these blockers — want to address them before continuing?"
-6. Continue to Execute from where the handoff left off.
+1. Read `PLAN.md` + `BOARD.md`. **That is the entire restore — two reads.**
+2. Legacy plan (has `*-handoff-*.md`, no BOARD.md)? Synthesize BOARD.md from the handoffs ONCE (status from the latest; decisions/learnings merged from all), move the handoffs to `archive/`, then proceed. Never read the handoff pile again.
+3. Announce: "Resuming {plan}. {X}/{Y} phases merged. Door: {open at <worktree/branch> / closed}. Picking up: {next}."
+4. Unresolved blockers on the board → surface them first.
+5. If the board says the door is open, verify the worktree/branch still exists before using it; if it's gone, reopen (§5a) and note it on the board.
 
-## 4. Execute
+## 4. Pick the lane
 
-Work through the plan phase by phase, task by task.
+| Choose | When |
+|---|---|
+| **Solo lane** (§4a) | ≤2 phases, or strictly serial phases touching the same files, or trivial scope, or `--solo` |
+| **Scrum lane** (§5) | 3+ phases, or any two phases can run in parallel, or the plan will clearly outlast one sitting |
 
-### Session Budget (MANDATORY)
+### 4a. Solo lane
 
-Before starting execution, **detect your context window size** and set a budget:
+Execute phases inline, in order. After EVERY phase: verify against acceptance criteria, commit, **update BOARD.md**, then continue. Context events (§7) still apply. This is classic v1 behavior with a board instead of handoffs — no agent ceremony for small jobs.
 
-**How to detect:** Check your system prompt for model info. If it says "1M context" or the model ID contains `[1m]`, you're in extended context mode. Otherwise, assume standard (~200k).
+## 5. Scrum lane
 
-| Context Window | Max phases/session | Resume budget | Announce |
-|---|---|---|---|
-| **Standard (~200k)** | 2 | 1-2 (handoffs consume context) | "Context budget: up to {N} phases (max 2), then hand off." |
-| **Extended (1M)** | 5 | 3-4 (handoffs are a small fraction) | "Extended context detected. Budget: up to {N} phases (max 5), then hand off." |
+### 5a. Open the door — ONCE per plan
 
-1. **Count remaining phases** in the plan
-2. **Set budget** per the table above — these are HARD CEILINGS, not suggestions
-3. **Announce** the budget and context tier so the user knows what to expect
+- One isolated workspace per plan — a git worktree (your harness's worktree tool, or `git worktree add ../wt-{plan} -b jks/{plan}`) or a feature branch if worktrees don't fit the project. Created at first execution and **kept open across sprints AND across sessions** until SUMMARY.md is written. If the board says it already exists, re-enter it — never create a second one.
+- **Respect the project's own contribution rules** (CLAUDE.md, CONTRIBUTING.md): branch naming, merge style, protected branches. The first time you determine the project's merge + deploy conventions, record them on the board as a Decision — never re-derive them.
+- **The scrum master owns git.** Dev agents edit and verify; they never commit, never run git write commands. This single rule eliminates agent-vs-agent git races.
+- Tearing the door down mid-plan (teardown → recreate next sprint) is a violation, not tidiness: it burns tokens re-establishing state and loses the open lanes. The door closes once, in §9.
 
-**The budget is non-negotiable.** When you hit your budget, you hand off. You do not "just finish this one more thing." You do not evaluate whether you have room. You hand off.
+### 5b. Sprint planning (a few minutes of thinking, zero file reads)
 
-### Autonomous Mode (default — just keep swimming)
+1. From PLAN.md's Depends-on lines, compute the **ready set** — phases whose dependencies are all merged.
+2. **Assign file ownership.** Each dispatched phase owns a disjoint set of files/dirs (use PLAN.md's files-touched hints; when two ready phases claim the same file, serialize them or move the shared file to one owner). Shared registries/manifests (route tables, config indexes, nav files, lockfiles) are **scrum-master-edited at the merge window**, not agent-edited — they're the classic collision point.
+3. **Right-size each dispatch:** mechanical/rote work (renames, boilerplate, config plumbing) → smaller model or low effort; design-heavy or risky work → default model, high effort for the hardest. The cheapest agent that can pass the review gate is the right agent.
+4. Sprint size: dispatch everything ready and disjoint — that's the point. But keep it supervisable: if the ready set exceeds ~4 phases, batch it.
 
-Execute continuously without stopping to ask. After each phase:
-1. Briefly report what was done (one-line status)
-2. **Run the Handoff Trigger Check** (see below) — this is NOT optional
-3. If ANY trigger fires → execute **Handoff Protocol** immediately. Do not start the next phase.
-4. If all triggers are clear AND budget remains → continue to next phase
+### 5c. Dispatch — parallel, one message
 
-### Interactive Mode (`--interactive`)
+Launch all sprint agents in a single message. Each dev prompt is a **contract**:
 
-After each phase:
-1. Report what was done with details
-2. **Run the Handoff Trigger Check** (see below)
-3. If triggers fire, recommend handoff: "Context is getting heavy — I recommend we hand off now."
-4. If clear, ask: "Phase {N} complete. Continue to next phase, create a handoff, or adjust the plan?"
-5. Wait for user direction
-
-### Handoff Trigger Check (MANDATORY — run after EVERY phase)
-
-**STOP and hand off if ANY of these are true:**
-
-| # | Trigger | Standard (~200k) | Extended (1M) | Why |
-|---|---------|---|---|-----|
-| 1 | **Phases completed** | >= 2 | >= 5 | Context consumed by file reads, code writes, decisions |
-| 2 | **Context compression detected** | Same for both: you notice earlier messages are summarized, or can't recall specific details from early in the session | | Hand off NOW before more is lost |
-| 3 | **Large phase just completed** | 10+ file reads/writes | 20+ file reads/writes | Large phases consume disproportionate context |
-| 4 | **Subagent-heavy work** | 3+ subagents | 8+ subagents | Subagent results inflate context significantly |
-| 5 | **Budget exhausted** | Same for both: you've hit your session budget | | Non-negotiable. Hand off. |
-
-**How to self-check for compression:** Try to recall specific details from the START of this session — the first file you read, the first change you made, exact line numbers. If these feel fuzzy or you're relying on "I think I..." rather than "I know I...", compression has started. **This is the most reliable trigger regardless of context size — trust it over the phase count.**
-
-**When in doubt, hand off.** A session that completed 1 phase with a clean handoff is MORE valuable than a session that completed 3 phases with no handoff, because the next session starts from zero without one.
-
-**Both modes**: User can say "handoff" at any point to force one.
-
-### Mid-Phase Checkpoints
-
-For phases with many subtasks (4+), do a mini-check at the halfway point:
-- **Standard context**: If you've already completed 1 full phase, consider handing off at the mid-point of phase 2 rather than at the end
-- **Extended context**: Mid-phase checks become relevant after phase 3-4, not phase 1-2
-- A handoff mid-phase is perfectly fine — document what's done and what's left within the phase
-
-### Execution Rules
-- Follow the plan in order unless dependencies allow reordering
-- If blocked, ask the user — don't guess or force through
-- Don't skip verification steps from the plan
-- **When reality diverges from the plan**, note the deviation but keep moving — capture it in the handoff's Amendments section
-
-## 5. Handoff Protocol
-
-**CRITICAL: Do this WHILE you still have full context. The whole point is to capture nuance BEFORE it's lost to compression.**
-
-**Handoff is triggered by:**
-- (Autonomous) Any trigger from the Handoff Trigger Check
-- (Interactive) User chooses to handoff
-- (Both) User says "handoff" at any point
-- (Both) Session budget exhausted
-
-**When a trigger fires, IMMEDIATELY stop execution and write the handoff.** Do not finish "one more thing." Do not clean up code. Do not run one more test. Write. The. Handoff.
-
-### Create the handoff document
-
-Find next handoff number: check existing `*-handoff-*.md` files in the plan directory. If none, use 001. Otherwise increment the highest.
-
-Count completed vs total phases from PLAN.md to calculate progress.
-
-Write to `docs/justkeepswimming/{plan-name}/YYYY-MM-DD-handoff-NNN.md`:
-
-```markdown
-# Handoff — {Plan Name} — Session {NNN}
-
-**Date**: YYYY-MM-DD HH:MM
-**Progress**: {X} of {Y} phases complete (~{percent}%)
-**Session summary**: One-line description of what this session accomplished
-**Handoff trigger**: Which trigger(s) fired (e.g., "2 phases completed", "context compression detected", "budget exhausted")
-
-## Completed This Session
-
-- [x] Phase/task description — `file.js:42` exact references
-- [x] Phase/task description — `file.js:100-150` exact references
-
-## In Progress (if handing off mid-phase)
-
-- [ ] Phase N, Task X — describe what's done and what's left within this task
-- Current state: what was the last thing you did, what's the next step
-
-## Remaining Work
-
-- [ ] Phase/task from PLAN.md still pending
-- [ ] Phase/task from PLAN.md still pending
-
-## Blockers & Open Questions
-
-- Blocker: description — what needs to happen to unblock (e.g., "need user to clarify X", "dependency Y not available")
-- Question: something that needs a decision before proceeding
-
-## Skipped & Why
-
-- Task description: reason it was skipped
-
-## Plan Amendments
-
-Where reality diverged from the original plan:
-- Plan said X → Actually did Y because Z
-- Phase N approach changed: rationale
-
-## Key Learnings (This Session)
-
-Discoveries from THIS session — be specific, include file:line references:
-- Architecture insight with file paths
-- Data structure shapes found
-- Edge cases encountered
-- Patterns or conventions discovered
-- Things you tried that didn't work and why
-
-## Cumulative Context (All Sessions)
-
-**Carry forward from all prior handoffs.** Condense and merge — don't just copy-paste. This section should give a future agent everything they need WITHOUT reading prior handoffs:
-- Critical architecture facts
-- Data structures and their actual shapes
-- Cache behaviors, key schemes, TTLs
-- Known gotchas and edge cases
-- Naming conventions
-- Key decisions and their rationale (from all sessions)
-
-## Next Session
-
-1. **Read first**: `specific/file.js` (lines X-Y) — why this file matters
-2. **Focus**: next phase/task description
-3. **Watch out for**: gotchas, tricky areas, things that almost broke
-4. **Context budget recommendation**: suggest phases based on remaining complexity (standard: 1-2, extended 1M: 3-5)
-
-## Protocol
-
-Resume this plan: `/justkeepswimming:go {plan-name}`
-Your #1 job is the handoff. Detect your context tier, set budget accordingly, execute, then hand off BEFORE context gets heavy.
-When all phases are done, ask the user about cleanup.
+```
+You are Dev-{phase} on plan {plan-name}. Work ONLY in {workspace-path}.
+MISSION: {phase goal} — acceptance criteria: {criteria, verbatim from PLAN.md}
+FILES YOU OWN: {list}. Files owned by others this sprint: {list} — do not touch them.
+If the mission truly requires editing an unowned file, STOP and report BLOCKED with why.
+STANDING DECISIONS (follow, don't re-litigate): {relevant BOARD Decisions lines}
+CONSTRAINTS: follow the project's CLAUDE.md/CONTRIBUTING rules; match surrounding code
+style; no new dependencies without reporting.
+GIT: do not commit, stage, or run any git write command — the scrum master owns git.
+VERIFY before reporting: {commands — syntax checks, targeted tests, linters}
+REPORT back ≤25 lines: STATUS (DONE|PARTIAL|BLOCKED) · files touched (path:lines) ·
+verification results (command + pass/fail, key lines only) · deviations from plan ·
+learnings worth the board · open items. No diffs, no file dumps.
 ```
 
-### After writing the handoff:
+While agents work, you do board upkeep and merge windows — you do not idle-poll, and you do not grab a phase to "help." (A blocked sprint with nothing left to integrate is the one time you may take a small task inline.)
 
-1. Tell the user the handoff is saved with its path
-2. Show progress: "X of Y phases complete (~N%)"
-3. If blockers exist, highlight them
-4. Say: **"Start a new session and run `/justkeepswimming:go {plan-name}` to continue."**
+### 5d. Review gate — every phase, before its merge
 
-## 6. Completion
+For each returned phase, dispatch a **reviewer agent** (fresh eyes; high effort for risky code):
 
-When ALL plan phases are done:
-
-1. Create a final handoff with title: `# COMPLETE — {Plan Name} — Final Summary`
-2. Include: all completed work across ALL sessions, total key learnings, plan amendments made, final cumulative context
-3. Ask the user:
-   - "Want to commit the remaining changes?"
-   - "Keep the plan directory for reference or clean it up?"
-   - "Anything need a server restart or deployment?"
-
-### Generate SUMMARY.md
-
-After the final handoff, **always** generate `docs/justkeepswimming/{plan-name}/SUMMARY.md`. This is a polished, standalone document — not a handoff. It should be useful to anyone (human or AI) who wants to understand what was built without reading handoff files.
-
-Write to `docs/justkeepswimming/{plan-name}/SUMMARY.md`:
-
-```markdown
-# {Plan Name} — Final Summary & Next Steps
-
-**Date**: YYYY-MM-DD
-**Status**: COMPLETE — All {Y} phases deployed and verified
-
-## Architecture Overview
-
-High-level description of the final architecture. Include a diagram (ASCII art or code block) showing how components relate to each other. Be specific: ports, processes, data flows, routing layers.
-
-## What Changed
-
-| File | Change |
-|------|--------|
-| `path/to/file.js` | **New** or **Modified** — brief description |
-
-Include ALL files created and modified across ALL sessions.
-
-## Amendments from Original Plan
-
-Where reality diverged from the plan and why. Only include if there were actual deviations.
-
-## Operational Commands
-
-Quick reference for common operations: health checks, restarts, log viewing, config reloads — whatever is relevant to the system that was built. Skip this section if the plan didn't produce operational infrastructure.
-
----
-
-## Recommended Next Steps
-
-Organize into prioritized groups (Priority 1, 2, 3, etc.). Each group should have:
-- A clear theme (e.g., "Monitoring & Observability", "Performance Tuning")
-- 2-4 concrete, actionable recommendations
-- Enough detail that someone could plan implementation from the description alone
-
-Focus on what naturally follows from the work just completed. Don't pad with generic advice — every recommendation should be specific to what was built.
+```
+Adversarially review phase {N} ({goal}) in {workspace}. Scope: the owned files {list}.
+Check: acceptance criteria actually met · real bugs (logic, edge cases, races, security) ·
+project-convention violations (CLAUDE.md/CONTRIBUTING) · missing wiring (registrations,
+exports, config entries, migrations).
+Report ≤20 lines: VERDICT GREEN|RED · confirmed issues with file:line + a concrete
+failure scenario each · nitpicks separately (non-blocking).
 ```
 
-**Adapt the template to the project.** The sections above are guidelines, not a rigid format. If the plan was a refactor with no operational commands, skip that section. If it was infrastructure work, the operational commands section is critical. Use judgment.
+- RED → send the findings BACK TO THE SAME DEV AGENT (message the existing agent — its context is warm and cached; a fresh fixer would re-read everything). Re-review the fix. Two RED rounds on the same phase → stop, mark it blocked on the board, move on or ask the user.
+- Batch small same-risk phases into one review dispatch; never skip the gate because a change "is obviously fine." Rework escaping to a later sprint is the single biggest token burn this skill exists to prevent.
 
-### Offer Follow-Up Plan
+### 5e. Merge window — integrate while agents still work
 
-After writing SUMMARY.md, ask the user:
+When one or more phases are GREEN, run a merge window. **Dispatch the next sprint FIRST (5b→5c), then integrate** — development and integration overlap; nobody waits on a merge.
 
-> "The summary includes recommended next steps. Want me to create a **new plan** from these recommendations using `superpowers:writing-plans`? I can turn the next steps into a structured implementation plan that you can execute with `/justkeepswimming:go {new-plan-name}`."
+1. **Verify the batch:** run the project's checks the change warrants — syntax checks, targeted tests, lint, build (record the exact commands on the board the first time).
+2. **Commit owned paths only:** stage the exact files from the GREEN phases → commit with a plain message. In-flight WIP from later phases stays uncommitted and unharmed.
+3. **Integrate per the project's convention** (the board Decision from 5a): fast-forward/merge to the integration branch directly, or push and open/update the PR — either way the plan branch lives on; the door stays open. If the target branch has diverged: **defer** — note "merge deferred, target moved" on the board and integrate at the next window. Never rebase a workspace that has other agents' WIP in it.
+4. **Ship when the window is green:** if the project has a deploy command or CI release path and the integrated change is deployable, trigger it now — don't hoard ten phases for one big-bang deploy. Respect the project's release cadence; a queued/batched deploy counts as done.
+5. **Update BOARD.md** — states, commit SHAs, decisions, learnings. This is the sync point; it is never deferred to "after the next phase."
 
-If the user says yes:
-1. Use the Recommended Next Steps from SUMMARY.md as the input/context for plan creation
-2. Ask for a plan name (suggest one based on the recommendations, e.g., `microservice-monitoring` or `performance-tuning`)
-3. Invoke `superpowers:writing-plans` to create the plan
-4. Save to `docs/justkeepswimming/{new-plan-name}/PLAN.md`
-5. Ask: "Plan saved. Start execution now or pick it up later with `/justkeepswimming:go {new-plan-name}`?"
+### 5f. Loop
 
-## 7. Post-Delivery Maintenance
+Sprints repeat (ready set → dispatch → review gate → merge window) until all phases are merged. Standing agents from earlier phases take small follow-ups via a message to the existing agent instead of new spawns — warm context is cheap context.
 
-**When:** The user has a completed plan (SUMMARY.md exists) and reports a bug, requests a change, or needs debugging related to the work that plan delivered. Entered via the "Maintenance" option in Determine Mode, or when the user explicitly mentions an issue with completed work.
+### 5g. Gap sweep — before declaring victory
 
-**The full Thinking Protocol applies.** Every investigation follows diagnose-before-prescribe. Every fix uses minimum effective intervention. No exceptions — especially not for "simple" fixes.
+All phases merged ≠ done. Dispatch a **completeness critic**: "Read PLAN.md acceptance criteria + BOARD.md + the branch's `git log`/`git diff --stat`. Hunt what's missing: unmet criteria, unwired ends (registrations, exports, config, migrations), missing tests/docs. Report gaps ≤20 lines." Findings become a final micro-sprint through the same gate. Only a clean critic report moves you to §9.
 
-### Entering Maintenance Mode
+## 6. Token economy (how this stays cheap)
 
-1. Read `SUMMARY.md` to restore context — architecture, files changed, decisions made
-2. Read the latest handoff's **Cumulative Context** for detailed knowledge
-3. If maintenance logs already exist (`*-maintenance-*.md`), read the most recent one for prior post-delivery context
-4. Announce: "Entering maintenance mode for {plan-name}. Context restored from completion summary."
-5. Ask the user to describe the issue or change (unless they already have)
+| Rule | Practice |
+|---|---|
+| Delegate the noise | Orchestrator never reads implementation files or raw diffs; agents return ≤25-line structured reports |
+| One-read resume | BOARD.md is the only state file; the handoff pile is dead |
+| Cache alignment | Front-load your reads (PLAN, BOARD) at session start and don't re-read; batch independent tool calls in one message; keep orchestrator turns short and stable |
+| Reuse warm agents | Follow-ups and fixes go to the SAME agent — its context is already cached; fresh spawns re-read the world |
+| Right-size | Cheapest model/effort that passes the gate; save high effort for review and risky design |
+| Kill rework | Acceptance criteria travel IN the dispatch prompt; review gates run BEFORE merges; BLOCKED beats a wrong guess |
+| Cap ceremony | Board updates are a few edits — status lines, not essays |
 
-### Investigation & Fix Protocol
+## 7. Context events & session end
 
-For EVERY issue or change request, follow this sequence:
+The board makes context loss survivable — these triggers make it cheap:
 
-**1. Understand** — What is the user seeing? What do they expect? What's the gap? Don't touch code until you understand.
+- **You notice summarization, or early-session details feel fuzzy** ("I think" instead of "I know"): finish in-flight reviews cheaply, run one final board update, STOP dispatching. Tell the user: "Board is current — resume with `/justkeepswimming:go {plan}`." Do not start "one more phase" first; that instinct is the failure mode.
+- **All lanes blocked on user input**: board update, list the blockers, end the turn.
+- **User says stop/handoff** at any time: board update, report state.
+- In-flight dev agents at session end are fine — their work sits in the workspace; the board notes which phases were mid-flight so the next session re-reviews or re-dispatches them.
 
-**2. Diagnose / Survey** (Thinking Protocol — diagnose before you prescribe):
-- **For bugs**: List all conditions required for the expected behavior. Verify each empirically. Look for silent failures.
-- **For change requests**: Survey the current implementation to understand what exists, what needs to change, and what might be affected. Read the relevant files before writing anything.
-- **Both**: Log every step — what you checked, what you found, expected vs actual
-- Use SUMMARY.md's file list as your investigation map — start with the files the plan touched
+There is no phase-count ceiling in v2 — a lean orchestrator outlasts any fixed budget. The compression signal is the only clock that matters, and an always-current board means even missing it loses one sprint, not a session.
 
-**3. Fix** (Thinking Protocol principle #5):
-- Minimum effective intervention — fix the root cause only
-- Note exact changes with `file:line` references
-- Do NOT refactor, "improve", or "clean up" surrounding code
+## 8. Maintenance (post-delivery)
 
-**4. Verify & Deploy**:
-- Confirm the fix addresses the root cause
-- Check for side effects in related files from SUMMARY.md
-- If the plan touched multiple layers (route → service → frontend), verify all affected layers
-- **If applicable**: Follow the server restart and user notification protocols from CLAUDE.md (selective PM2 restart, gentle banner for frontend-only, force refresh for backend changes)
+Entered from §1 when a completed plan's work needs a bug fix, change, or investigation.
 
-### Maintenance Log (MANDATORY)
+1. Restore from `SUMMARY.md` (architecture map) + BOARD.md Learnings. Announce maintenance mode.
+2. **Thinking Protocol applies in full** — diagnose before prescribing; the one condition you skip is the broken one.
+3. Investigate → fix root cause only → verify the exact surface the user named (not a proxy) → follow the project's restart/release conventions.
+4. **Always write the log** — `YYYY-MM-DD-maintenance-NNN.md`: investigation steps with findings, changes table (file/lines/why), verification, deployment, notes. Investigation-only sessions log too ("no issue found" is context). Trivial fix ⇒ abbreviate investigation to 1-2 lines, never skip the log. Do NOT edit SUMMARY.md — maintenance logs are the post-delivery source of truth.
+5. Scope larger than a targeted fix (3+ files coordinated, "needs a refactor")? Stop: "This needs its own plan — want a follow-up plan?"
 
-**ALWAYS create a maintenance log after every maintenance session — even for "simple" fixes.** The log is how future agents know what changed post-delivery and why. Without it, knowledge is lost the same way it's lost without handoffs.
+## 9. Completion — clean folder, closed door
 
-Find next log number: check existing `*-maintenance-*.md` files. If none, use 001. Otherwise increment the highest.
-
-Write to `docs/justkeepswimming/{plan-name}/YYYY-MM-DD-maintenance-NNN.md`:
-
-```markdown
-# Maintenance — {Plan Name} — #{NNN}
-
-**Date**: YYYY-MM-DD HH:MM
-**Type**: Bug fix / Change request / Investigation
-**Reported**: One-line description of what the user reported or requested
-
-## Investigation
-
-Steps taken to diagnose, with findings at each step:
-1. Checked `file.js:42` — found X, expected Y
-2. Verified condition Z — confirmed working
-3. Root cause: [specific finding with file:line reference]
-
-## Changes Made
-
-| File | Lines | Change |
-|------|-------|--------|
-| `path/to/file.js` | 42-48 | Description of what changed and why |
-
-## Verification
-
-How the fix was verified:
-- Confirmed behavior X by [method]
-- Checked related file Y for side effects — [result]
-
-## Deployment
-
-- PM2 restart: [which process, or "none needed"]
-- User notification: [gentle banner / force refresh / none]
-
-## Notes
-
-- Anything the user should know
-- Concerns about the fix or related fragility
-- Related issues to watch for
-```
-
-### Maintenance Rules
-
-- **ALWAYS create the log** — no exceptions, no "it was too small to log". Write the log BEFORE reporting the fix to the user.
-- **ALWAYS read SUMMARY.md first** — it's your architecture map
-- **NEVER skip investigation steps** — even if the fix seems obvious, log what you checked. The "obvious" fix is wrong often enough to justify 30 seconds of verification.
-- **Log investigation-only sessions too** — if you investigate and find "no issue", create a log with Type: "Investigation" and document what was checked. The investigation itself is valuable context.
-- **For trivial fixes** (single-line change, obvious root cause): you may abbreviate the Investigation section to 1-2 lines, but NEVER skip the log entirely. The Changes and Verification sections are still mandatory.
-- **Multiple issues in one session**: Create separate log entries (increment NNN) for each distinct issue
-- **Thinking Protocol applies fully** — if you catch yourself jumping to a fix without diagnosing, stop and list conditions first
-- **Cross-reference the plan**: When logging changes, note which original plan phase the affected code came from (e.g., "Phase 2 — API routes")
-- **No session budget or handoff triggers in maintenance mode** — maintenance work should be short and targeted. If it's not, escalate to a new plan (see "When Maintenance Becomes a Plan" below).
-- **If a maintenance investigation runs out of context before resolving**: Write a maintenance log with Type: "Investigation (incomplete)", document everything found so far, and state the next diagnostic step. The next session reads this log and continues.
-- **Do NOT update SUMMARY.md after maintenance fixes** — SUMMARY.md documents the original plan's delivered state. Maintenance logs are the source of truth for post-delivery changes. Future agents should read both.
-
-### When Maintenance Becomes a Plan
-
-If a maintenance request reveals scope larger than a targeted fix (e.g., "this needs a refactor" or "3+ files need coordinated changes"), stop and tell the user:
-
-> "This is bigger than a maintenance fix — it needs its own plan. Want me to create a follow-up plan with `/justkeepswimming:go {new-plan-name}`?"
-
-Don't force a multi-phase change through the maintenance protocol. Plans exist for a reason.
+1. **SUMMARY.md** (the standalone record): architecture overview + diagram, What Changed table (every file, all sessions), amendments from the original plan, operational commands (if infra was built), **Recommended Next Steps** in prioritized groups — specific to what was built, never generic advice, detailed enough to plan from.
+2. **Clean the folder:** keep PLAN.md, final BOARD.md, SUMMARY.md; sweep legacy handoffs/review scratch into `archive/`. A stranger opening the folder should read SUMMARY.md and understand everything.
+3. **Close the door:** final merge + ship (§5e rules), then remove YOUR worktree/branch per the project's cleanup convention. Merge ⇒ self-cleanup, immediately; never leave a dead workspace.
+4. Offer a follow-up plan built from the Recommended Next Steps.
 
 </process>
+
+<red-flags>
+## Red flags — stop, you're about to burn the budget
+
+| Thought | Reality |
+|---|---|
+| "I'll just read this module myself, it's quicker" | That's a dev agent's context to spend, not yours. Dispatch. |
+| "A fresh workspace for this batch would be cleaner" | Door churn is the token burn this skill kills. One door per plan. |
+| "I'll update the board when the sprint finishes" | Sync points are after every gate/window. A stale board = handoff roulette. |
+| "Review's overkill for this small phase" | Rework escaping to a later sprint costs 10× the review. Gate everything. |
+| "The target branch moved — I'll rebase real quick" | Other agents have WIP in that tree. Defer the merge; next window. |
+| "One more phase, then I'll finalize the board" | Compression already started. Finalize NOW. |
+| "I'll spawn a fresh agent to fix the reviewer's findings" | The original dev's context is warm and cached. Message it. |
+</red-flags>
+
+<board-template>
+## BOARD.md template
+
+```markdown
+# Board — {Plan Name}
+
+**Updated**: YYYY-MM-DD HH:MM · **Door**: {worktree/branch} (open) | closed
+**Progress**: {X}/{Y} phases merged · **Shipped**: {last release/deploy ref or "not yet"}
+
+## Status
+| Phase | State | Agent | Files | Commit | Notes |
+|---|---|---|---|---|---|
+| 1. {name} | merged | Dev-1 | src/x.ts | abc1234 | |
+| 2. {name} | review | Dev-2 | src/y.ts | — | round 1 |
+<!-- states: todo · in-progress · review · fixing · green · merged · shipped · blocked -->
+
+## Decisions (settled — agents follow, don't re-litigate)
+- YYYY-MM-DD: {decision} — {rationale}
+- YYYY-MM-DD: merge convention: {FF to main | PR}; deploy: {command | CI | none}; checks: {commands}
+
+## Learnings (cumulative — survives every session)
+- {architecture fact / data shape / gotcha} — `file.ts:42`
+
+## Open Items & Blockers
+- {item} — {what unblocks it}
+
+## Session Log
+- YYYY-MM-DD s1: {one line}
+
+## Next
+1. Read first: {file/lines — why}
+2. Focus: {next sprint}
+3. Watch out: {gotchas}
+```
+</board-template>

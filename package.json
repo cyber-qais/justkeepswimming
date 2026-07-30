@@ -1,7 +1,7 @@
 {
   "name": "justkeepswimming",
-  "version": "1.0.0",
-  "description": "Lightweight plan management plugin for Claude Code with context-aware handoffs to prevent context rot during multi-phase implementations",
+  "version": "2.0.0",
+  "description": "Scrum-master plan execution for Claude Code — parallel dev agents, review gates, a live board, and open-door merge windows",
   "author": "Qais Alkurdi",
   "license": "Apache-2.0",
   "homepage": "https://github.com/cyber-qais/justkeepswimming",

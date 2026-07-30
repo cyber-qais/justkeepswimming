@@ -1,13 +1,13 @@
 <p align="center">
   <img src="https://img.shields.io/badge/Claude_Code-Plugin-06b6d4?style=for-the-badge&logo=data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMTIgMkM2LjQ4IDIgMiA2LjQ4IDIgMTJzNC40OCAxMCAxMCAxMCAxMC00LjQ4IDEwLTEwUzE3LjUyIDIgMTIgMnoiIGZpbGw9IiNmZmYiLz48L3N2Zz4=" alt="Claude Code Plugin" />
   <img src="https://img.shields.io/badge/License-Apache_2.0-blue?style=for-the-badge" alt="Apache 2.0" />
-  <img src="https://img.shields.io/badge/Context-Rot_Proof-10b981?style=for-the-badge" alt="Context Rot Proof" />
+  <img src="https://img.shields.io/badge/v2-Scrum_Master-8b5cf6?style=for-the-badge" alt="v2 Scrum Master" />
 </p>
 
 <h1 align="center">Just Keep Swimming</h1>
 
 <p align="center">
-  <strong>Context-aware handoffs for Claude Code that prevent knowledge loss across sessions.</strong>
+  <strong>Scrum-master execution for multi-phase plans: parallel agents, review gates, open-door merge windows, and a live board that makes context loss survivable.</strong>
   <br />
   <a href="https://cyber-qais.github.io/justkeepswimming/">Landing Page</a> &middot; <a href="THINKING.md">Thinking Protocol</a> &middot; <a href="MARKETING.md">Why JKS?</a>
 </p>
@@ -16,9 +16,9 @@
 
 ## The Problem
 
-AI coding agents lose context during long sessions. When context compresses, nuanced details vanish — architecture decisions, data structures, edge cases. The agent keeps working but makes subtly wrong decisions.
+AI coding agents execute big plans serially, burn their context on file reads, stall at arbitrary phase budgets, and lose knowledge when context compresses. Every session restart re-reads a growing pile of handoff documents. Every phase waits for the previous one even when they're independent.
 
-> **Context compression is inevitable. Knowledge loss is not.**
+> **Context is the scarcest resource. v2 stops spending it on implementation.**
 
 ## Quick Start
 
@@ -39,30 +39,20 @@ Then:
 
 ---
 
-## How It Works
+## How v2 Works — the Scrum Master Model
 
 ```
- Session 1                    Session 2                    Session 3
- ┌─────────────────┐         ┌─────────────────┐         ┌─────────────────┐
- │                  │         │                  │         │                  │
- │  Execute         │         │  Read handoff    │         │  Read handoff    │
- │  Phase 1 ✓       │         │  (full context)  │         │  (full context)  │
- │  Phase 2 ✓       │         │                  │         │                  │
- │                  │         │  Execute         │         │  Execute         │
- │  Context heavy   │         │  Phase 3 ✓       │         │  Phase 5 ✓       │
- │  ┌─────────────┐ │         │  Phase 4 ✓       │         │  Phase 6 ✓       │
- │  │  HANDOFF    │─┼────────>│                  │         │                  │
- │  │  ·progress  │ │         │  Context heavy   │         │  ┌─────────────┐ │
- │  │  ·learnings │ │         │  ┌─────────────┐ │         │  │  COMPLETE   │ │
- │  │  ·context   │ │         │  │  HANDOFF    │─┼────────>│  │  SUMMARY.md │ │
- │  └─────────────┘ │         │  │  ·cumulative│ │         │  └─────────────┘ │
- └─────────────────┘         │  └─────────────┘ │         └─────────────────┘
-                              └─────────────────┘
+PLAN.md ─► sprint plan ─► dispatch devs (parallel) ─► review gate ─► merge window ─► ship
+              ▲                                            │       (dispatch NEXT sprint
+              └────────────── BOARD.md update ◄────────────┘        BEFORE integrating —
+                                                                    the door stays open)
 ```
 
-Each handoff captures **cumulative context** — condensed knowledge from ALL prior sessions merged into one section. Session 3's agent reads ONE document and knows everything sessions 1 and 2 discovered.
-
----
+- **The orchestrator never reads implementation files.** Parallel dev agents own disjoint files and return ≤25-line reports. One session supervises ten phases instead of executing two.
+- **One live BOARD.md replaces the handoff pile.** Updated at every sync point. Resume = two file reads (PLAN + BOARD), no matter how many sessions came before.
+- **The door stays open.** One worktree/branch per plan, kept open across sprints AND sessions. Merge windows integrate and deploy finished phases *while later phases are still being built* — no per-phase worktree churn, no big-bang merge at the end.
+- **Every phase passes an adversarial review gate before merging.** Fixes go back to the same warm agent (cached context), not a fresh spawn.
+- **A completeness critic sweeps for gaps** before the plan is declared done — then SUMMARY.md, a clean folder, and prioritized next-step recommendations.
 
 ## Two Commands
 
@@ -70,24 +60,22 @@ Each handoff captures **cumulative context** — condensed knowledge from ALL pr
 
 | What it does | How |
 |---|---|
-| **Creates plans** | From scratch, from conversation context (`--from-context`), or imported |
-| **Executes continuously** | Phase by phase, autonomous or interactive |
-| **Hands off automatically** | Detects context health, writes handoff before degradation |
-| **Resumes seamlessly** | Reads all prior handoffs, restores full context |
+| **Creates plans** | From scratch, from conversation (`--from-context`), or imported — with acceptance criteria + dependencies per phase |
+| **Executes in lanes** | Solo lane for small plans; scrum lane orchestrates parallel dev agents for 3+ phases |
+| **Reviews everything** | Adversarial review gate per phase, before its merge |
+| **Ships continuously** | Merge windows integrate + deploy green phases while agents keep working |
+| **Survives any session end** | The board is always current; resume from two reads |
 | **Maintains completed work** | Structured debugging with maintenance logs |
 
 ### `/justkeepswimming:night-build` — Autonomous Pipeline
 
 | Phase | What happens |
 |---|---|
-| **Discover** | Reads CLAUDE.md, detects tech stack, deployment targets |
-| **Review** | Scans last 12h of commits, checks end-to-end wiring |
-| **Code Review** | Finds bugs, fixes HIGH-confidence issues |
-| **Syntax Check** | Validates JS/TS, Python, Dart, Rust, Go |
-| **Test** | Runs project test suite |
-| **Build & Deploy** | Builds, deploys, restarts services, notifies users |
-| **Summary** | Writes detailed report, self-reviews for gaps |
-| **Commit & Push** | Stages, commits, pushes to git |
+| **Discover** | Reads CLAUDE.md, detects stack, deploy targets, baseline since last night build |
+| **Review** | Parallel reviewer agents: correctness, conventions, security, wiring gaps |
+| **Fix** | High-confidence fixes applied + verified; risky findings deferred with specifics |
+| **Test / Build / Deploy** | Project's own commands; queued/batched deploys count as success |
+| **Summary** | Detailed report, self-reviewed for gaps, committed and pushed |
 
 Fully autonomous. No prompts. Adapts to any project.
 
@@ -101,39 +89,37 @@ Fully autonomous. No prompts. Adapts to any project.
 
 | Flag | Effect |
 |:-----|:-------|
-| *(none)* | Autonomous mode. Execute continuously, handoff automatically. |
-| `--interactive` | Pause after each phase for review. |
+| *(none)* | Autonomous mode. Execute continuously; the board stays current. |
+| `--solo` | Force inline execution (no agent orchestration). |
+| `--interactive` | Pause at sprint boundaries for review. |
 | `--from-context` | Build plan from current conversation. |
 | `--now` | `--from-context` + skip confirmations. Just go. |
 
-Combine them: `--now --interactive` builds plan instantly, pauses between phases.
-
 ---
 
-## What's In a Handoff?
+## What's On the Board?
 
 ```markdown
-# Handoff — API Migration — Session 002
+# Board — API Migration
 
-**Progress**: 4 of 6 phases complete (~67%)
-**Handoff trigger**: 2 phases completed + context compression detected
+**Updated**: 2026-03-13 22:41 · **Door**: wt-api-migration (open)
+**Progress**: 4/6 phases merged · **Shipped**: abc1234
 
-## Completed This Session
-- [x] Phase 3: Auth middleware — `middleware/auth.js:42-89`
-- [x] Phase 4: Rate limiting — `services/rateLimiter.js:1-156`
+## Status
+| Phase | State | Agent | Files | Commit |
+|---|---|---|---|---|
+| 3. Auth middleware | merged | Dev-3 | middleware/auth.js | e19af02 |
+| 5. Rate limiting | review | Dev-5 | services/rateLimiter.js | — |
 
-## Key Learnings
+## Decisions (settled — agents follow, don't re-litigate)
+- 2026-03-12: merge convention: FF to main; deploy: npm run deploy; checks: npm test
+
+## Learnings (cumulative — survives every session)
 - Redis cache uses `user:{id}:session` key scheme (TTL 30min)
-- Auth tokens checked via middleware, NOT route-level
-
-## Cumulative Context (All Sessions)
-- API uses Express 4.x with router-level middleware
-- Database: PostgreSQL via Knex, migrations in `db/migrations/`
-- Session 1 discovered: connection pooling maxes at 20
-- Session 2 discovered: rate limiter must exempt /health endpoint
+- Rate limiter must exempt /health — `services/rateLimiter.js:88`
 ```
 
-Every learning, every decision, every file reference — preserved across sessions.
+Every learning, every decision, every file reference — one document, always current.
 
 ---
 
@@ -185,20 +171,20 @@ Six principles injected into every session:
 | 5 | **Minimum effective intervention** | Fix root cause only |
 | 6 | **Resist "the usual fix"** | If it's been tried, check a different layer |
 
-Customize by editing [`THINKING.md`](THINKING.md). Your team's hard-won debugging lessons get injected into every future session.
+Plus the **Orchestrator's Corollary** for v2: delegate the noise, keep the signal — see [`THINKING.md`](THINKING.md).
 
 ---
 
-## Context-Aware Session Budgets
+## The Token Economy
 
-The skill detects your context window and enforces hard limits:
-
-| Context Window | Max Phases | Why |
-|:---|:---:|:---|
-| Standard (~200k) | 2 | Each phase consumes significant context |
-| Extended (1M) | 5 | More room, but still finite |
-
-When budget is hit, the agent hands off. No negotiation, no "just one more thing."
+| Rule | Practice |
+|:---|:---|
+| Delegate the noise | The orchestrator never reads implementation files; agents return ≤25-line reports |
+| One-read resume | BOARD.md is the only state file — the handoff pile is dead |
+| Cache alignment | Front-load reads, batch tool calls, keep orchestrator turns short and stable |
+| Reuse warm agents | Fixes go to the same agent (cached context), not fresh spawns |
+| Right-size | Cheapest model/effort that passes the review gate |
+| Kill rework | Acceptance criteria in every dispatch; review gates before every merge |
 
 ---
 
@@ -223,10 +209,10 @@ Plan complete? JKS stays useful. When bugs surface or changes are needed:
 | | Just Keep Swimming | Heavy workflow systems |
 |:---|:---|:---|
 | **Files** | 2 commands + 1 methodology doc | 30+ files, state tracking |
-| **State** | Handoff documents only | STATE.md, ROADMAP.md, CONTEXT.md, ... |
-| **Concepts** | Plan, Execute, Handoff | Projects, Milestones, Phases, Waves, Audits |
+| **State** | One live board per plan | STATE.md, ROADMAP.md, CONTEXT.md, ... |
+| **Concepts** | Plan, Board, Sprint, Merge window | Projects, Milestones, Phases, Waves, Audits |
+| **Parallelism** | File-ownership lanes, review gates, one git owner | Usually none, or unmanaged |
 | **Setup** | Copy 2 files or install plugin | Plugin + configuration + learning curve |
-| **Best for** | Getting things done | Managing complex parallel workstreams |
 
 ---
 
@@ -236,14 +222,13 @@ Plan complete? JKS stays useful. When bugs surface or changes are needed:
 your-project/
 └── docs/justkeepswimming/
     ├── api-migration/
-    │   ├── PLAN.md                    # The plan
-    │   ├── 2026-03-12-handoff-001.md  # Session 1
-    │   ├── 2026-03-13-handoff-002.md  # Session 2
-    │   ├── 2026-03-14-handoff-003.md  # Final (COMPLETE)
-    │   ├── 2026-03-15-maintenance-001.md  # Post-delivery fix
-    │   └── SUMMARY.md                 # Architecture overview
+    │   ├── PLAN.md                        # Phases + acceptance criteria + dependencies
+    │   ├── BOARD.md                       # Live state — always current
+    │   ├── SUMMARY.md                     # Architecture overview + next steps
+    │   ├── 2026-03-15-maintenance-001.md  # Post-delivery fix log
+    │   └── archive/                       # Legacy handoffs, review scratch
     └── night-build/
-        └── 2026-03-14-night-build.md  # Build report
+        └── 2026-03-14-night-build.md      # Build report
 ```
 
 Plain markdown files. Commit them, branch them, `git blame` them.
@@ -252,43 +237,41 @@ Plain markdown files. Commit them, branch them, `git blame` them.
 
 ## Dependencies
 
-- **Claude Code** (any recent version)
+- **Claude Code** (any recent version). Subagent support (the Agent tool) unlocks the scrum lane; without it, the solo lane still works everywhere.
 - **superpowers plugin** *(optional)* — for auto-generated plans via `superpowers:writing-plans`
-
-No superpowers? Import your own plans or use `--from-context`.
 
 ---
 
 ## FAQ
 
 <details>
-<summary><strong>What if I forget to say "handoff"?</strong></summary>
-Autonomous mode monitors context health and creates handoffs automatically. You don't need to do anything.
+<summary><strong>What happened to handoff documents?</strong></summary>
+Replaced by the live board. v1 plans with handoff piles migrate automatically: the first v2 session synthesizes BOARD.md from them once and archives the pile. Resume is two reads forever after.
 </details>
 
 <details>
-<summary><strong>Can I use this without the superpowers plugin?</strong></summary>
-Yes. Import your own plan or use <code>--from-context</code> to synthesize from conversation.
+<summary><strong>Do parallel agents conflict with each other?</strong></summary>
+No — each phase owns a disjoint set of files, shared registries are edited only by the orchestrator at merge windows, and only the orchestrator runs git. Conflicts are prevented structurally, not resolved after the fact.
+</details>
+
+<details>
+<summary><strong>Can I use this without subagent support?</strong></summary>
+Yes — the solo lane executes inline with the same board, review discipline, and completion flow. <code>--solo</code> forces it.
 </details>
 
 <details>
 <summary><strong>What happens when the plan is complete?</strong></summary>
-The agent creates a final COMPLETE handoff, generates SUMMARY.md with architecture overview and next steps, then offers to turn recommendations into a new plan.
+A completeness critic hunts for gaps first. Then SUMMARY.md (architecture, every file changed, prioritized next steps), a cleaned folder, the worktree/branch is closed out, and the agent offers to turn the recommendations into a follow-up plan.
 </details>
 
 <details>
 <summary><strong>Can I have multiple active plans?</strong></summary>
-Yes. Each plan lives in its own directory under <code>docs/justkeepswimming/</code>.
-</details>
-
-<details>
-<summary><strong>Does the night-build work with any project?</strong></summary>
-Yes. Phase 0 discovers your stack, deployment procedure, and process manager. Only relevant phases execute.
+Yes. Each plan lives in its own directory with its own board and its own open door.
 </details>
 
 <details>
 <summary><strong>Does this work with git?</strong></summary>
-Plans and handoffs are plain markdown files. Commit, branch, share — they're just files.
+Plans and boards are plain markdown files, and the execution model is git-native: one branch/worktree per plan, merge windows, your project's own merge convention (direct merge or PR).
 </details>
 
 ---

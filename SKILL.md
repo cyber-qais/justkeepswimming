@@ -1,34 +1,35 @@
 ---
 name: justkeepswimming
-description: "Plan management with context-aware session handoffs for multi-phase implementations. Use this skill whenever the user wants to break a large project into phases, plan a multi-step implementation, manage work across multiple sessions, create handoff documents to preserve context, do an end-of-day autonomous build/deploy pipeline, or maintain and debug previously completed work. Trigger on phrases like: 'break this into phases', 'implementation plan', 'this will take multiple sessions', 'let's plan this out', 'continue where we left off', 'handoff', 'night build', 'end of day build', 'context is getting long', 'session management', 'plan this project', or any large-scope coding task that clearly cannot be done in a single response. Also trigger when the user mentions context rot, context loss, or preserving knowledge across sessions."
+description: "Multi-phase plan execution and context preservation. Use whenever the user wants to break a large project into phases, execute a multi-step implementation plan start-to-finish, run work across parallel agents without conflicts, manage work across multiple sessions, preserve context with a live board or handoffs, run an end-of-day autonomous build/deploy pipeline, or maintain and debug previously completed work. Trigger on phrases like: 'break this into phases', 'implementation plan', 'this will take multiple sessions', 'execute this plan', 'scrum master', 'orchestrate agents', 'parallel agents', 'continue where we left off', 'resume the plan', 'handoff', 'the board', 'night build', 'end of day build', 'context is getting long', 'context rot', or any large-scope coding task that clearly cannot be done in a single response."
 ---
 
-# Just Keep Swimming
+# Just Keep Swimming v2
 
-Context-aware plan management with smart session handoffs. Prevents knowledge loss across long implementations by creating structured handoff documents that carry cumulative context forward.
+Scrum-master execution for multi-phase plans: one orchestrator with a lean context coordinates parallel dev agents, gates every phase behind adversarial review, integrates through open-door merge windows, and keeps a live BOARD.md so any session can resume from a single read.
 
 ## Two Commands
 
-### `go` — Plan & Execute
-Creates, executes, and hands off multi-phase implementation plans. Monitors context health and automatically creates handoff documents before context degrades.
+### `go` — Plan & Execute (the scrum master)
+Creates or imports a plan, then executes it: small plans inline (solo lane), larger plans via parallel dev agents with file-ownership lanes, review gates, and merge windows that ship while later phases are still being built. State lives on a single live board — sessions resume with two file reads.
 
-**Flags:** `--interactive` (pause after each phase), `--from-context` (build plan from conversation), `--now` (from-context + skip confirmations)
-
-**Modes:** New plan → Execute → Handoff → Resume → Completion → Maintenance
+**Flags:** `--solo` (force inline), `--interactive` (pause at sprint boundaries), `--from-context` (build plan from conversation), `--now` (from-context + skip confirmations)
 
 For full instructions, read: `commands/justkeepswimming/go.md`
 
 ### `night-build` — Autonomous Pipeline
-Unattended end-of-day pipeline: reviews commits, code reviews, syntax checks, tests, builds, deploys, writes summary, commits and pushes. Fully autonomous — no prompts.
+Unattended end-of-day sweep: parallel review agents over the day's commits, gap analysis, confident fixes, tests, build, deploy, summary. Fully autonomous — no prompts.
 
 For full instructions, read: `commands/justkeepswimming/night-build.md`
 
 ## Core Concepts
 
-- **Plans** live in `docs/justkeepswimming/{plan-name}/` with a `PLAN.md`, handoff files, and a `SUMMARY.md` on completion
-- **Handoffs** capture cumulative context from ALL prior sessions — the next session reads one document and has full context
-- **Session budgets** enforce hard limits (2 phases standard, 5 phases extended context) to prevent context exhaustion
-- **Thinking Protocol** (6 principles for systematic debugging): diagnose before prescribing, trace the full chain, check what's actually there, know silent failures, minimum effective intervention, resist "the usual fix"
+- **Plans** live in `docs/justkeepswimming/{plan-name}/` — `PLAN.md` (phases with acceptance criteria + dependencies), `BOARD.md` (live state), `SUMMARY.md` on completion
+- **The board replaces handoff piles** — one rolling document updated at every sync point; resume = read PLAN.md + BOARD.md, nothing else
+- **The scrum master model** — the orchestrator's context holds decisions and coordination; parallel dev agents own disjoint files and return ≤25-line reports; only the scrum master touches git
+- **Open-door integration** — one worktree/branch per plan kept open across sprints and sessions; merge windows integrate and deploy finished phases while agents keep working; teardown happens once, at completion
+- **Review gates** — every phase is adversarially reviewed before merge; fixes go back to the same warm agent
+- **Token economy** — delegate the noise, one-read resume, cache-aligned context, right-sized models, review-before-merge to kill rework
+- **Thinking Protocol** (six principles for systematic problem-solving): diagnose before prescribing, trace the full chain, check what's actually there, know silent failures, minimum effective intervention, resist "the usual fix" — see `THINKING.md`
 - **Maintenance mode** for post-delivery debugging with structured investigation logs
 
 ## When to Read the Full Command Files
