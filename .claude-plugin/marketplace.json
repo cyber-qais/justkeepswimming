@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "Context-aware handoffs and autonomous build pipelines for Claude Code",
-    "version": "2.1.0"
+    "version": "2.2.0"
   },
   "plugins": [
     {
@@ -16,7 +16,7 @@
         "url": "https://github.com/cyber-qais/justkeepswimming.git"
       },
       "description": "Scrum-master plan execution for Claude Code — parallel dev agents, review gates, a live board, and open-door merge windows",
-      "version": "2.1.0"
+      "version": "2.2.0"
     }
   ]
 }

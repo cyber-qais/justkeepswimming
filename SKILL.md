@@ -30,6 +30,8 @@ For full instructions, read: `commands/justkeepswimming/night-build.md`
 - **Review gates** — every phase is adversarially reviewed before merge; fixes go back to the same warm agent
 - **Tier doctrine** — the strongest model orchestrates (never downgraded, never compacted); one tier down develops; two tiers down take rote lanes; high effort is reserved for review gates, and the riskiest surfaces get the orchestrator's model as reviewer
 - **Fresh sessions over compaction** — work in shifts that end at clean board boundaries; a new session resumes from two reads instead of a compacted orchestrator continuing with silently degraded judgment
+- **The board is audited, not trusted** — `scripts/board-check.js` verifies every merged/shipped claim, the progress count, the ship SHA, and the door state against git truth; it runs at resume, after every merge window, and before completion
+- **Lite lane** for half-day work — one LITE.md file, inline execution, a single end-of-work review gate; graduates to a full board the moment scope outgrows a sitting
 - **Token economy** — delegate the noise, one-read resume, cache-aligned context, right-sized models, review-before-merge to kill rework
 - **Thinking Protocol** (six principles for systematic problem-solving): diagnose before prescribing, trace the full chain, check what's actually there, know silent failures, minimum effective intervention, resist "the usual fix" — see `THINKING.md`
 - **Maintenance mode** for post-delivery debugging with structured investigation logs

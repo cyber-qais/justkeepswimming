@@ -92,6 +92,7 @@ Fully autonomous. No prompts. Adapts to any project.
 | Flag | Effect |
 |:-----|:-------|
 | *(none)* | Autonomous mode. Execute continuously; the board stays current. |
+| `--lite` | Half-day lane: one LITE.md, inline execution, one end review gate. |
 | `--solo` | Force inline execution (no agent orchestration). |
 | `--interactive` | Pause at sprint boundaries for review. |
 | `--from-context` | Build plan from current conversation. |
@@ -122,6 +123,16 @@ Fully autonomous. No prompts. Adapts to any project.
 ```
 
 Every learning, every decision, every file reference — one document, always current.
+
+**And it's audited, not trusted:** `scripts/board-check.js` (ships with the plugin, zero dependencies) verifies every merged/shipped claim, the progress count, the ship SHA, and the door state against git truth — at resume, after every merge window, and before completion:
+
+```
+$ node scripts/board-check.js api-migration
+  ❌ FAIL: "Phase 3": commit 9f3ab12 is NOT on main — state says merged
+  ✖ 1 failure(s) — the board does not match git truth.
+```
+
+For half-day jobs there's a **lite lane** (`--lite`): one `LITE.md`, inline execution, a single end-of-work review gate — and a hard rule to graduate to a full board the moment scope outgrows the sitting.
 
 ---
 

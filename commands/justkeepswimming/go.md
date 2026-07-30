@@ -1,7 +1,7 @@
 ---
 name: justkeepswimming:go
 description: Scrum-master plan execution — run a multi-phase plan with parallel dev agents, a live board, review gates, and open-door merge windows that ship while agents keep working
-argument-hint: "[plan-name] [--solo] [--interactive] [--from-context] [--now]"
+argument-hint: "[plan-name] [--lite] [--solo] [--interactive] [--from-context] [--now]"
 allowed-tools:
   - Read
   - Write
@@ -51,7 +51,9 @@ docs/justkeepswimming/{plan-name}/
 └── archive/      # Superseded artifacts (legacy handoffs, review scratch)
 ```
 
-**Lanes:** solo (small plans, execute inline) vs **scrum** (3+ phases: orchestrate parallel dev agents).
+Lite plans (≤ half a day) use a single `LITE.md` instead of the trio — see §4b.
+
+**Lanes:** lite (half-day work, one file, one gate) vs solo (small plans, execute inline) vs **scrum** (3+ phases: orchestrate parallel dev agents).
 **Modes:** autonomous (default — just keep swimming) vs `--interactive` (pause at sprint boundaries).
 
 ```
@@ -66,10 +68,12 @@ PLAN.md ─► sprint plan ─► dispatch devs (parallel) ─► review gate �
 
 ## 1. Route
 
-Parse `$ARGUMENTS`: flags `--solo` (force inline execution), `--interactive`, `--from-context` (synthesize PLAN.md from this conversation), `--now` (implies `--from-context`, skip all confirmations). Everything else is the plan name.
+Parse `$ARGUMENTS`: flags `--lite` (half-day lane, §4b), `--solo` (force inline execution), `--interactive`, `--from-context` (synthesize the plan from this conversation), `--now` (implies `--from-context`, skip all confirmations). Everything else is the plan name.
 
 - **No plan name**: list existing dirs in `docs/justkeepswimming/` (mark completed ones — SUMMARY.md exists). Ask: resume one or start new?
 - **SUMMARY.md exists**: plan is COMPLETE. Offer: review summary / follow-up plan from its recommendations / **maintenance** (§8) / fresh plan. If the user's message already describes a bug or change ("X is broken"), skip the menu → §8 Maintenance.
+- **LITE.md exists (no PLAN.md)** → resume the lite job (§4b): read LITE.md, continue — or graduate if it's outgrown the lane.
+- **`--lite`, or the ask is obviously ≤ half a day** → §4b Lite lane (no PLAN.md ceremony).
 - **No PLAN.md** → §2 New Plan.
 - **PLAN.md exists** → §3 Resume (BOARD.md or legacy handoffs tell you where things stand; neither existing means fresh execution → §4).
 
@@ -83,21 +87,33 @@ Parse `$ARGUMENTS`: flags `--solo` (force inline execution), `--interactive`, `-
 ## 3. Resume
 
 1. Read `PLAN.md` + `BOARD.md`. **That is the entire restore — two reads.**
-2. Legacy plan (has `*-handoff-*.md`, no BOARD.md)? Synthesize BOARD.md from the handoffs ONCE (status from the latest; decisions/learnings merged from all), move the handoffs to `archive/`, then proceed. Never read the handoff pile again.
-3. Announce: "Resuming {plan}. {X}/{Y} phases merged. Door: {open at <worktree/branch> / closed}. Picking up: {next}."
-4. Unresolved blockers on the board → surface them first.
-5. If the board says the door is open, verify the worktree/branch still exists before using it; if it's gone, reopen (§5a) and note it on the board.
+2. **Audit the board against git truth:** `node scripts/board-check.js {plan}` (ships in this plugin's `scripts/` — copy it into your project's `scripts/` on first use; if node or the script is unavailable, spot-check the merged SHAs by hand). The board is self-reported; the checker isn't. Any FAIL → fix the board from git evidence BEFORE dispatching anything — a board that lies poisons every decision downstream.
+3. Legacy plan (has `*-handoff-*.md`, no BOARD.md)? Synthesize BOARD.md from the handoffs ONCE (status from the latest; decisions/learnings merged from all), move the handoffs to `archive/`, then proceed. Never read the handoff pile again.
+4. Announce: "Resuming {plan}. {X}/{Y} phases merged. Door: {open at <worktree/branch> / closed}. Picking up: {next}."
+5. Unresolved blockers on the board → surface them first.
+6. Door open but the checker says the worktree/branch is gone → reopen (§5a) and note it on the board.
 
 ## 4. Pick the lane
 
 | Choose | When |
 |---|---|
-| **Solo lane** (§4a) | ≤2 phases, or strictly serial phases touching the same files, or trivial scope, or `--solo` |
+| **Lite lane** (§4b) | ≤ half a day of work, single sitting expected, or `--lite` |
+| **Solo lane** (§4a) | Bigger than lite but ≤2 phases, or strictly serial phases touching the same files, or `--solo` |
 | **Scrum lane** (§5) | 3+ phases, or any two phases can run in parallel, or the plan will clearly outlast one sitting |
 
 ### 4a. Solo lane
 
 Execute phases inline, in order. After EVERY phase: verify against acceptance criteria, commit, **update BOARD.md**, then continue. Context events (§7) still apply. This is classic v1 behavior with a board instead of handoffs — no agent ceremony for small jobs.
+
+### 4b. Lite lane — ceremony that fits in a sitting
+
+For work you'll finish today. The full trio (PLAN/BOARD/SUMMARY) must earn itself; here it doesn't.
+
+- **One file**: `docs/justkeepswimming/{plan}/LITE.md` — goal (one line), checklist with acceptance criteria inline, a Decisions/Learnings section you append as you go, and an Outcome section at the end. No PLAN.md, no BOARD.md, no SUMMARY.md.
+- **Execute inline**, following the project's normal git conventions (branch/worktree for multi-file work).
+- **One review gate, at the end**: a single reviewer agent (dev tier, high effort) over the full diff before shipping. Skip only for docs/prototype-only changes — production code always gets the gate.
+- **Finish the sitting**: verify the exact surface named in the ask, ship per the project's release convention, append the Outcome (what shipped, commit SHA, verification run, follow-ups worth remembering). The folder stays one file.
+- **Graduate, don't stretch.** Scope grows past half a day, or a second session becomes likely → write PLAN.md + BOARD.md from LITE.md's content, move LITE.md to `archive/`, and continue in solo/scrum. A lite job that spans sessions without a board is handoff roulette with fewer notes.
 
 ## 5. Scrum lane
 
@@ -172,7 +188,7 @@ When one or more phases are GREEN, run a merge window. **Dispatch the next sprin
 2. **Commit owned paths only:** stage the exact files from the GREEN phases → commit with a plain message. In-flight WIP from later phases stays uncommitted and unharmed.
 3. **Integrate per the project's convention** (the board Decision from 5a): fast-forward/merge to the integration branch directly, or push and open/update the PR — either way the plan branch lives on; the door stays open. If the target branch has diverged: **defer** — note "merge deferred, target moved" on the board and integrate at the next window. Never rebase a workspace that has other agents' WIP in it.
 4. **Ship when the window is green:** if the project has a deploy command or CI release path and the integrated change is deployable, trigger it now — don't hoard ten phases for one big-bang deploy. Respect the project's release cadence; a queued/batched deploy counts as done.
-5. **Update BOARD.md** — states, commit SHAs, decisions, learnings. This is the sync point; it is never deferred to "after the next phase."
+5. **Update BOARD.md** — states, commit SHAs, decisions, learnings — then audit it: `node scripts/board-check.js {plan}`. A FAIL here means the board you just wrote doesn't match git; fix it now, while the window's evidence is fresh. This is the sync point; it is never deferred to "after the next phase."
 
 ### 5f. Loop
 
@@ -220,10 +236,11 @@ Entered from §1 when a completed plan's work needs a bug fix, change, or invest
 
 ## 9. Completion — clean folder, closed door
 
-1. **SUMMARY.md** (the standalone record): architecture overview + diagram, What Changed table (every file, all sessions), amendments from the original plan, operational commands (if infra was built), **Recommended Next Steps** in prioritized groups — specific to what was built, never generic advice, detailed enough to plan from.
-2. **Clean the folder:** keep PLAN.md, final BOARD.md, SUMMARY.md; sweep legacy handoffs/review scratch into `archive/`. A stranger opening the folder should read SUMMARY.md and understand everything.
-3. **Close the door:** final merge + ship (§5e rules), then remove YOUR worktree/branch per the project's cleanup convention. Merge ⇒ self-cleanup, immediately; never leave a dead workspace.
-4. Offer a follow-up plan built from the Recommended Next Steps.
+1. **Final board audit:** `node scripts/board-check.js {plan}` must pass clean — SUMMARY.md is written from the board, so the board must match git truth first.
+2. **SUMMARY.md** (the standalone record): architecture overview + diagram, What Changed table (every file, all sessions), amendments from the original plan, operational commands (if infra was built), **Recommended Next Steps** in prioritized groups — specific to what was built, never generic advice, detailed enough to plan from.
+3. **Clean the folder:** keep PLAN.md, final BOARD.md, SUMMARY.md; sweep legacy handoffs/review scratch into `archive/`. A stranger opening the folder should read SUMMARY.md and understand everything.
+4. **Close the door:** final merge + ship (§5e rules), then remove YOUR worktree/branch per the project's cleanup convention. Merge ⇒ self-cleanup, immediately; never leave a dead workspace.
+5. Offer a follow-up plan built from the Recommended Next Steps.
 
 </process>
 
@@ -241,6 +258,8 @@ Entered from §1 when a completed plan's work needs a bug fix, change, or invest
 | "No compression signal yet — one more sprint fits" | Shifts end at boundaries, not at the cliff. Heavy transcript + clean boundary = end the shift. |
 | "A top-tier review gate seems wasteful" | The gate is the cheapest insurance you buy. Economize in the dev lanes, never at the gate. |
 | "I'll spawn a fresh agent to fix the reviewer's findings" | The original dev's context is warm and cached. Message it. |
+| "The board looks right, skip the checker" | Self-reported state drifts. The checker is one subprocess; a lying board poisons every later decision. |
+| "This lite job just needs one more sitting" | Lite without a board across sessions is handoff roulette. Graduate it. |
 </red-flags>
 
 <board-template>
