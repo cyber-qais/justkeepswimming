@@ -130,6 +130,8 @@ For work you'll finish today. The full trio (PLAN/BOARD/SUMMARY) must earn itsel
 - One isolated workspace per plan — a git worktree (your harness's worktree tool, or `git worktree add ../wt-{plan} -b jks/{plan}`) or a feature branch if worktrees don't fit the project. Created at first execution and **kept open across sprints AND across sessions** until SUMMARY.md is written. If the board says it already exists, re-enter it — never create a second one.
 - **Respect the project's own contribution rules** (CLAUDE.md, CONTRIBUTING.md): branch naming, merge style, protected branches. The first time you determine the project's merge + deploy conventions, record them on the board as a Decision — never re-derive them.
 - **The scrum master owns git.** Dev agents edit and verify; they never commit, never run git write commands. This single rule eliminates agent-vs-agent git races.
+- **Commit the plan the moment the door opens.** PLAN.md + BOARD.md are the first commit on the plan branch, before anything is dispatched. Workspaces can vanish (a crash, a session restart, a cleanup job); an uncommitted plan dies with them.
+- **Verify the door before you write into it.** On resume or after any restart, confirm the workspace is still registered (`git worktree list`, or the branch exists) before creating files there. A path whose worktree is gone is just a directory: files written into it land outside git and get stranded. Door gone → open a new one (a new name if the old one is burned) and record the switch on the board.
 - Tearing the door down mid-plan (teardown → recreate next sprint) is a violation, not tidiness: it burns tokens re-establishing state and loses the open lanes. The door closes once, in §9.
 
 ### 5b. Sprint planning (a few minutes of thinking, zero file reads)
@@ -147,8 +149,10 @@ For work you'll finish today. The full trio (PLAN/BOARD/SUMMARY) must earn itsel
 
    The cheapest agent that passes the review gate is the right agent — but the gate itself is never where you economize. Deviations are board Decisions.
 4. Sprint size: dispatch everything ready and disjoint — that's the point. But keep it supervisable: if the ready set exceeds ~4 phases, batch it.
+5. **A concurrency cap beats the fan-out.** If the project or its owner limits concurrent subagents ("one subagent at a time"), that limit overrides this skill's parallel dispatch. Run the sprint as a serial queue — one dev OR one reviewer running at any moment — and **commit each GREEN phase before dispatching the next** (the next phase usually edits files the last one created, so an uncommitted tree would mix two phases in one commit). Phases, acceptance criteria, gates and the board are unchanged; only the fan-out goes. Record the cap as a board Decision.
+6. **Warm until heavy.** A dev that just finished a phase is the cheapest agent for its fixes and for the adjacent phase on the same surface. Switch to a fresh dev when the warm one's context is past roughly half its window, or when the next phase is a different surface (messaging or webhooks after UI work): a crisp contract beats a heavy, blurry context.
 
-### 5c. Dispatch — parallel, one message
+### 5c. Dispatch — parallel, one message (serial under a cap, §5b.5)
 
 Launch all sprint agents in a single message. Each dev prompt is a **contract**:
 
@@ -185,6 +189,8 @@ failure scenario each · nitpicks separately (non-blocking).
 ```
 
 - RED → send the findings BACK TO THE SAME DEV AGENT (message the existing agent — its context is warm and cached; a fresh fixer would re-read everything). Re-review the fix. Two RED rounds on the same phase → stop, mark it blocked on the board, move on or ask the user.
+- **Keep one standing reviewer.** Reuse the same reviewer for every phase by messaging it the new scope ("the uncommitted diff is Phase N only"). It builds up the project's invariants, notices when a later phase breaks an earlier fix, and gives a warm second opinion on open design calls (a check-baseline expansion, polling vs. push) for almost nothing. Ask for that recommendation explicitly.
+- **Follow-up rounds after GREEN.** Non-blocking findings worth fixing go back to the dev as one short round. You may commit that round without its own re-review only if you put it, by name, in the NEXT gate's scope. A round that fixes a RED finding always gets its own re-review before commit.
 - Batch small same-risk phases into one review dispatch; never skip the gate because a change "is obviously fine." Rework escaping to a later sprint is the single biggest token burn this skill exists to prevent.
 - **Wide fan-outs (≥3 same-shape dispatches — a review panel across many phases, the §5g gap sweep) MAY run through your harness's deterministic multi-agent workflow tool when one is available** — this skill directing you to use it is your opt-in. Give each agent a JSON schema so reports come back validated instead of prose. Dev lanes stay on the interactive agent tool — they need follow-up messages.
 
@@ -195,8 +201,11 @@ When one or more phases are GREEN, run a merge window. **Dispatch the next sprin
 1. **Verify the batch:** run the project's checks the change warrants — syntax checks, targeted tests, lint, build (record the exact commands on the board the first time).
 2. **Commit owned paths only:** stage the exact files from the GREEN phases → commit with a plain message. In-flight WIP from later phases stays uncommitted and unharmed.
 3. **Integrate per the project's convention** (the board Decision from 5a): fast-forward/merge to the integration branch directly, or push and open/update the PR — either way the plan branch lives on; the door stays open. If the target branch has diverged: **defer** — note "merge deferred, target moved" on the board and integrate at the next window. Never rebase a workspace that has other agents' WIP in it.
-4. **Ship when the window is green:** if the project has a deploy command or CI release path and the integrated change is deployable, trigger it now — don't hoard ten phases for one big-bang deploy. Respect the project's release cadence; a queued/batched deploy counts as done.
+4. **Ship when the window is green:** if the project has a deploy command or CI release path and the integrated change is deployable, trigger it now — don't hoard ten phases for one big-bang deploy. Respect the project's release cadence; a queued/batched deploy counts as done. (Exception: a feature that is unusable until a post-deploy step runs — a permission rollout, a migration — may land once at the end; record that as a Decision.)
 5. **Update BOARD.md** — states, commit SHAs, decisions, learnings — then audit it: `node scripts/board-check.js {plan}`. A FAIL here means the board you just wrote doesn't match git; fix it now, while the window's evidence is fresh. This is the sync point; it is never deferred to "after the next phase."
+   - **State words are git facts:** `green` = reviewed and committed on the plan branch (record the SHA); `merged` = reachable from the integration branch; `shipped` = deployed. A phase committed on the branch but not yet integrated is `green`, never `merged` — the checker fails a `merged` SHA that isn't on the integration branch.
+   - **A rebase landing rewrites SHAs.** After integrating, replace the board's branch SHAs with the integration-branch SHAs before the next audit.
+6. **Post-deploy steps are board items.** When a dev reports a step that must run after deploy (a permission/capability rollout, a data migration, a backfill, a cache warm), put the exact command on the board under Open Items the moment you hear of it. Run it dry-run first, then for real, right after the ship — never leave it in a dev report.
 
 ### 5f. Loop
 
@@ -204,7 +213,15 @@ Sprints repeat (ready set → dispatch → review gate → merge window) until a
 
 ### 5g. Gap sweep — before declaring victory
 
-All phases merged ≠ done. Dispatch a **completeness critic**: "Read PLAN.md acceptance criteria + BOARD.md + the branch's `git log`/`git diff --stat`. Hunt what's missing: unmet criteria, unwired ends (registrations, exports, config, migrations), missing tests/docs. Report gaps ≤20 lines." Findings become a final micro-sprint through the same gate. Only a clean critic report moves you to §9.
+All phases merged ≠ done. Dispatch a **completeness critic**: "Read PLAN.md acceptance criteria + BOARD.md + the branch's `git log`/`git diff --stat`. Hunt what's missing: unmet criteria, unwired ends (registrations, exports, config, migrations), missing tests/docs, and user-visible copy that still promises earlier phases' 'later' work. Report gaps ≤20 lines." Findings become a final micro-sprint through the same gate. Only a clean critic report moves you to §9.
+
+### 5h. Live verification — shipped ≠ done
+
+Green tests and a clean ship prove the code builds and the mocks agree; they do not prove the feature works. Mocked stores and simulated DOMs miss real storage behavior (a store that drops empty lists, so a view calls `.slice` on `undefined` and crashes). After the ship:
+
+1. Dispatch a **verifier agent** to drive the LIVE surface as a real user, at desktop and phone widths: real create/read/update/delete, reload for persistence, console errors, layout overflow. It names its test data clearly ("CC smoke …"), never triggers an outward action (send, pay, publish — preview only), and cleans up everything it created.
+2. Findings → a fix micro-sprint through the same gate → integrate → ship → **re-verify the exact scenario that failed.**
+3. The completion claim comes after the live re-check, not after the ship. If the live surface can't be reached, say so and name what the user must check.
 
 ## 6. Token economy (how this stays cheap)
 
@@ -213,7 +230,7 @@ All phases merged ≠ done. Dispatch a **completeness critic**: "Read PLAN.md ac
 | Delegate the noise | Orchestrator never reads implementation files or raw diffs; agents return ≤25-line structured reports |
 | One-read resume | BOARD.md is the only state file; the handoff pile is dead |
 | Cache alignment | Front-load your reads (PLAN, BOARD) at session start and don't re-read; batch independent tool calls in one message; keep orchestrator turns short and stable |
-| Reuse warm agents | Follow-ups and fixes go to the SAME agent — its context is already cached; fresh spawns re-read the world |
+| Reuse warm agents | Follow-ups and fixes go to the SAME agent — its context is already cached; fresh spawns re-read the world. Keep one standing reviewer across phases. Retire a dev once its context is heavy (§5b.6) |
 | Tier doctrine | The strongest model orchestrates; one tier down develops; two tiers down take the rote lanes; high effort is reserved for review gates (§5b.3) |
 | Fresh sessions | End a shift at a board boundary instead of riding into compaction — resume costs two reads (§7) |
 | Kill rework | Acceptance criteria travel IN the dispatch prompt; review gates run BEFORE merges; BLOCKED beats a wrong guess |
@@ -245,9 +262,9 @@ Entered from §1 when a completed plan's work needs a bug fix, change, or invest
 ## 9. Completion — clean folder, closed door
 
 1. **Final board audit:** `node scripts/board-check.js {plan}` must pass clean — SUMMARY.md is written from the board, so the board must match git truth first.
-2. **SUMMARY.md** (the standalone record): architecture overview + diagram, What Changed table (every file, all sessions), amendments from the original plan, operational commands (if infra was built), **Recommended Next Steps** in prioritized groups — specific to what was built, never generic advice, detailed enough to plan from.
+2. **SUMMARY.md** (the standalone record): architecture overview + diagram, What Changed table (every file, all sessions), amendments from the original plan, operational commands (if infra was built), **Recommended Next Steps** in prioritized groups — specific to what was built, never generic advice, detailed enough to plan from. **Write it before the final landing** when your landing step removes the workspace.
 3. **Clean the folder:** keep PLAN.md, final BOARD.md, SUMMARY.md; sweep legacy handoffs/review scratch into `archive/`. A stranger opening the folder should read SUMMARY.md and understand everything.
-4. **Close the door:** final merge + ship (§5e rules), then remove YOUR worktree/branch per the project's cleanup convention. Merge ⇒ self-cleanup, immediately; never leave a dead workspace.
+4. **Close the door in this order:** final merge → ship (§5e) → post-deploy steps (§5e.6) → live verification (§5h) → a small close-out commit that appends an **Outcome** section to SUMMARY.md (what shipped and where, deploy steps run, live-check result, known leftovers) and marks the board's door `closed`. Then remove YOUR worktree/branch per the project's cleanup convention. Merge ⇒ self-cleanup, immediately; never leave a dead workspace.
 5. Offer a follow-up plan built from the Recommended Next Steps.
 
 </process>
@@ -268,6 +285,11 @@ Entered from §1 when a completed plan's work needs a bug fix, change, or invest
 | "I'll spawn a fresh agent to fix the reviewer's findings" | The original dev's context is warm and cached. Message it. |
 | "The board looks right, skip the checker" | Self-reported state drifts. The checker is one subprocess; a lying board poisons every later decision. |
 | "This lite job just needs one more sitting" | Lite without a board across sessions is handoff roulette. Graduate it. |
+| "The owner caps subagents, but parallel is the whole point" | The cap wins. Run the sprint as a serial queue (§5b.5). |
+| "The worktree path exists, so the door is open" | Check `git worktree list`. A path without a registered worktree strands every file you write. |
+| "It's committed on the branch — mark it merged" | `merged` means on the integration branch. Branch-only is `green` + SHA. |
+| "Tests are green and it shipped — done" | Mocks never touched the real store. Verify the live surface (§5h), then say done. |
+| "The dev mentioned a rollout step, I'll remember it" | You won't, after a compaction or a new shift. Board Open Items, with the exact command. |
 </red-flags>
 
 <board-template>
@@ -284,11 +306,12 @@ Entered from §1 when a completed plan's work needs a bug fix, change, or invest
 |---|---|---|---|---|---|
 | 1. {name} | merged | Dev-1 | src/x.ts | abc1234 | |
 | 2. {name} | review | Dev-2 | src/y.ts | — | round 1 |
-<!-- states: todo · in-progress · review · fixing · green · merged · shipped · blocked -->
+<!-- states: todo · in-progress · review · fixing · green (reviewed + committed on the plan branch) · merged (on the integration branch) · shipped (deployed) · blocked -->
 
 ## Decisions (settled — agents follow, don't re-litigate)
 - YYYY-MM-DD: {decision} — {rationale}
 - YYYY-MM-DD: merge convention: {FF to main | PR}; deploy: {command | CI | none}; checks: {commands}
+- YYYY-MM-DD: concurrency: {parallel | serial — owner cap of N subagents}; landing: {per window | once at the end — why}
 
 ## Learnings (cumulative — survives every session)
 - {architecture fact / data shape / gotcha} — `file.ts:42`

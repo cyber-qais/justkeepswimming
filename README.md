@@ -243,8 +243,13 @@ Yes. The solo lane executes inline with the same board, review discipline, and c
 </details>
 
 <details>
+<summary><strong>My project allows only one subagent at a time. Does v2 still work?</strong></summary>
+Yes. A concurrency cap beats the fan-out: the sprint runs as a serial queue, one dev or one reviewer at a time, and each reviewed phase is committed before the next one starts. You keep the phases, the review gates and the board. You lose only the parallel speed.
+</details>
+
+<details>
 <summary><strong>What happens when the plan is complete?</strong></summary>
-A completeness critic hunts for gaps first: unmet acceptance criteria, unwired registrations, missing tests or docs. Then SUMMARY.md, a cleaned folder, the worktree closed out, and an offer to turn the recommendations into a follow-up plan.
+A completeness critic hunts for gaps first: unmet acceptance criteria, unwired registrations, missing tests or docs. After the ship, a verifier drives the live feature the way a user would (real create, edit and delete, desktop and phone widths) and cleans up its test data, because green tests with mocked storage can still hide a crash. Fixes go through the same gate and get re-verified. Then SUMMARY.md gets an Outcome section, the folder is cleaned, the worktree is closed out, and you get an offer to turn the recommendations into a follow-up plan.
 </details>
 
 <details>
