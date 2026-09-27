@@ -183,10 +183,20 @@ For each returned phase, dispatch a **reviewer agent** (fresh eyes; dev tier at 
 Adversarially review phase {N} ({goal}) in {workspace}. Scope: the owned files {list}.
 Check: acceptance criteria actually met · real bugs (logic, edge cases, races, security) ·
 project-convention violations (CLAUDE.md/CONTRIBUTING) · missing wiring (registrations,
-exports, config entries, migrations).
-Report ≤20 lines: VERDICT GREEN|RED · confirmed issues with file:line + a concrete
-failure scenario each · nitpicks separately (non-blocking).
+exports, config entries, migrations) ·
+CALLERS OUTSIDE THE DIFF: for every changed export, signature or record shape, find
+its callers/importers that the change did NOT touch (the project's dependency-graph
+tool if it has one, else grep the name) and check each still works; include names
+that live in strings (config, manifests, route tables, templates) — no code graph sees them.
+Report ≤20 lines: VERDICT GREEN|RED · RISK LOW|MEDIUM|HIGH|CRITICAL (why) · confirmed
+issues with file:line + a concrete failure scenario each · callers outside the diff
+(compatible | BROKEN) · missing coverage · nitpicks separately (non-blocking).
 ```
+
+**Risk rubric** (sets review depth; CRITICAL gates get the orchestrator's model): LOW = a
+handful of direct dependents in one runtime; MEDIUM = 6–15 dependents or several runtimes;
+HIGH = more than 15 dependents or a hot boot path; CRITICAL = anything touching auth,
+permissions, money, tenant/data isolation, outbound sending, deletion, or schema.
 
 - RED → send the findings BACK TO THE SAME DEV AGENT (message the existing agent — its context is warm and cached; a fresh fixer would re-read everything). Re-review the fix. Two RED rounds on the same phase → stop, mark it blocked on the board, move on or ask the user.
 - **Keep one standing reviewer.** Reuse the same reviewer for every phase by messaging it the new scope ("the uncommitted diff is Phase N only"). It builds up the project's invariants, notices when a later phase breaks an earlier fix, and gives a warm second opinion on open design calls (a check-baseline expansion, polling vs. push) for almost nothing. Ask for that recommendation explicitly.
